@@ -1,0 +1,7 @@
+*.rel
+*.map
+*.elf
+
+build/
+.idea/
+.vscode/
