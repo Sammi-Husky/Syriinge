@@ -5,8 +5,10 @@
 
 void* selCharLoadThread::main(void* arg)
 {
-    selCharLoadThread* thread = (selCharLoadThread*)arg;
+    selCharLoadThread* thread = static_cast<selCharLoadThread*>(arg);
     muSelCharPlayerArea* area = thread->m_playerArea;
+    const char* format = "/menu/common/char_bust_tex/MenSelchrFaceB%02d0.brres";
+    char filepath[0x34];
     int charKind;
 
     while (!thread->m_shouldExit)
@@ -17,34 +19,31 @@ void* selCharLoadThread::main(void* arg)
 
             void* dataAddr = static_cast<void*>(area->charPicData);
 
-            // if read is already in progress, cancel
-            // it and start new read request
+            // If read is already in progress, cancel it and start new read request
             if (thread->m_isRunning)
             {
                 thread->reset();
             }
 
-            // if handle is ready to accept commands
+            // If handle is ready to accept commands
             if (thread->m_handle.isReady())
             {
-                // handles conversions for poketrio and special slots
+                // Handles conversions for poketrio and special slots
                 int id = muMenu::exchangeMuSelchkind2MuStockchkind(charKind);
                 id = muMenu::getStockFrameID(id);
 
-                char filepath[0x80];
-                sprintf(filepath, "/menu/common/char_bust_tex/MenSelchrFaceB%02d0.brres", id);
+                sprintf(filepath, format, id);
 
-                // start the read process
+                // Start the read process
                 thread->m_handle.readRequest(filepath, dataAddr, 0, 0);
 
-                // clear read request and signal
-                // that read is in progress
+                // Clear read request and signal that read is in progress
                 thread->m_toLoad = -1;
                 thread->m_isRunning = true;
             }
         }
 
-        // data is finished loading
+        // Data is finished loading
         if (thread->m_handle.isReady() && thread->m_isRunning)
         {
             thread->m_dataReady = true;
@@ -61,7 +60,7 @@ void* selCharLoadThread::main(void* arg)
             thread->m_handle.release();
         }
 
-        // sleep thread until next vsync
+        // Sleep thread until next vsync
         VIWaitForRetrace();
     }
 

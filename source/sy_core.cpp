@@ -15,37 +15,41 @@ namespace SyringeCore {
         }
 
         char id = *(int*)info->m_buffer;
-        for (int i = 0; i < Injections.size(); i++)
+
+        int numInjections = Injections.size();
+        for (int i = 0; i < numInjections; i++)
         {
             InjectionAbs* inject = Injections[i];
-            if (inject->moduleId == id)
+            if (inject->moduleId != id)
             {
-                // if full func replacement we don't need original
-                // instruction. Branch directly to replacemnt.
-                u32 targetAddr = inject->tgtAddr;
-                if (inject->originalInstr == -1)
+                continue;
+            }
+
+            // if full func replacement we don't need original
+            // instruction. Branch directly to replacemnt.
+            u32 targetAddr = inject->tgtAddr;
+            if (inject->originalInstr == -1)
+            {
+                Hook* asHook = (Hook*)inject;
+
+                // it's important we refresh this before
+                // patching the target with the hook branch
+                if (asHook->trampoline != NULL)
                 {
-                    Hook* asHook = (Hook*)inject;
-
-                    // it's important we refresh this before
-                    // patching the target with the hook branch
-                    if (asHook->trampoline != NULL)
-                    {
-                        asHook->trampoline->originalInstr = *(u32*)targetAddr;
-                    }
-
-                    u32 branchAddr = (u32)&asHook->branch;
-                    *(u32*)targetAddr = utils::EncodeBranch(targetAddr, branchAddr);
+                    asHook->trampoline->originalInstr = *(u32*)targetAddr;
                 }
-                else
-                {
-                    // refresh original instruction now that
-                    // module has been loaded into memory
-                    inject->originalInstr = *(u32*)targetAddr;
 
-                    u32 hookAddr = (u32)&inject->originalInstr;
-                    *(u32*)targetAddr = utils::EncodeBranch(targetAddr, hookAddr);
-                }
+                u32 branchAddr = (u32)&asHook->branch;
+                *(u32*)targetAddr = utils::EncodeBranch(targetAddr, branchAddr);
+            }
+            else
+            {
+                // refresh original instruction now that
+                // module has been loaded into memory
+                inject->originalInstr = *(u32*)targetAddr;
+
+                u32 hookAddr = (u32)&inject->originalInstr;
+                *(u32*)targetAddr = utils::EncodeBranch(targetAddr, hookAddr);
             }
         }
     }

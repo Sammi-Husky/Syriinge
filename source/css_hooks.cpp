@@ -1,4 +1,5 @@
 #include <OS/OSCache.h>
+#include <modules.h>
 #include <mu/mu_sel_char_player_area.h>
 #include <nw4r/g3d/g3d_resfile.h>
 #include <types.h>
@@ -71,13 +72,15 @@ namespace CSSHooks {
         SyringeCore::syReplaceFunction(0x80693940,
                                        reinterpret_cast<void*>(getCharPicTexResFile),
                                        NULL,
-                                       10);
+                                       Modules::SORA_MENU_SEL_CHAR);
 
+        // hook to clean up our mess when unloading CSS
         SyringeCore::syReplaceFunction(0x806937bc,
                                        reinterpret_cast<void*>(destroyPlayerAreas),
                                        (void**)&_destroyPlayerAreas,
-                                       10);
+                                       Modules::SORA_MENU_SEL_CHAR);
 
-        SyringeCore::syHookFunction(0x80685DE8, reinterpret_cast<void*>(createThreads), 10);
+        // hook to create threads when booting the CSS
+        SyringeCore::syHookFunction(0x80685DE8, reinterpret_cast<void*>(createThreads), Modules::SORA_MENU_SEL_CHAR);
     }
 } // namespace CSSHooks
