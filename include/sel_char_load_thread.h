@@ -7,7 +7,7 @@
 class selCharLoadThread {
 protected:
     OSThread m_thread;
-    char m_stack[0x500];
+    char m_stack[0x1000];
 
     gfFileIOHandle m_handle;
 
