@@ -5,7 +5,6 @@
 
 namespace SyringeCore {
     Vector<InjectionAbs*> Injections;
-    Vector<Trampoline*> Trampolines;
 
     void reloadModuleHooks()
     {
@@ -16,7 +15,7 @@ namespace SyringeCore {
         }
 
         char id = *(int*)info->m_buffer;
-        for (int i = 0; i < Injections.getcapacity(); i++)
+        for (int i = 0; i < Injections.size(); i++)
         {
             InjectionAbs* inject = Injections[i];
             if (inject->moduleId == id)
@@ -27,6 +26,14 @@ namespace SyringeCore {
                 if (inject->originalInstr == -1)
                 {
                     Hook* asHook = (Hook*)inject;
+
+                    // it's important we refresh this before
+                    // patching the target with the hook branch
+                    if (asHook->trampoline != NULL)
+                    {
+                        asHook->trampoline->originalInstr = *(u32*)targetAddr;
+                    }
+
                     u32 branchAddr = (u32)&asHook->branch;
                     *(u32*)targetAddr = utils::EncodeBranch(targetAddr, branchAddr);
                 }
@@ -34,7 +41,7 @@ namespace SyringeCore {
                 {
                     // refresh original instruction now that
                     // module has been loaded into memory
-                    inject->originalInstr = *(u32*)inject->tgtAddr;
+                    inject->originalInstr = *(u32*)targetAddr;
 
                     u32 hookAddr = (u32)&inject->originalInstr;
                     *(u32*)targetAddr = utils::EncodeBranch(targetAddr, hookAddr);
@@ -78,26 +85,28 @@ namespace SyringeCore {
         hook->moduleId = moduleId;
         hook->tgtAddr = address;
 
-        Trampoline* tramp = new Trampoline();
-        tramp->originalInstr = *(u32*)address;
+        if (original != NULL)
+        {
+            // encode our trampoline branch
+            // back to original func
+            Trampoline* tramp = new Trampoline();
+            tramp->originalInstr = *(u32*)address;
 
-        // patch target func with hook
+            u32 trampBranch = (u32)&tramp->branch;
+            tramp->branch = utils::EncodeBranch(trampBranch, address + 4);
+
+            *original = tramp;
+            hook->trampoline = tramp;
+        }
+
         u32 replAddr = reinterpret_cast<u32>(replacement);
         u32 hookBranch = (u32)&hook->branch;
-
         hook->branch = utils::EncodeBranch(hookBranch, replAddr);
 
+        // patch target func with hook
         *(u32*)address = utils::EncodeBranch(address, hookBranch);
 
-        // encode our trampoline branch
-        // back to original func
-        u32 trampBranch = (u32)&tramp->branch;
-        tramp->branch = utils::EncodeBranch(trampBranch, address + 4);
-
-        *original = tramp;
-
         Injections.push(hook);
-        Trampolines.push(tramp);
     }
     void syReplaceFunction(const void* symbol, const void* replacement, void** original, int moduleId)
     {

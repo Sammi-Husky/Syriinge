@@ -5,6 +5,11 @@
 
 namespace SyringeCore {
 
+    struct Trampoline {
+        u32 originalInstr; // original instruction
+        u32 branch;        // branch to original func code + 4
+    };
+
     class InjectionAbs {
     public:
         InjectionAbs()
@@ -23,11 +28,7 @@ namespace SyringeCore {
     class Hook : public InjectionAbs {
     public:
         u32 branch;
-    };
-
-    struct Trampoline {
-        u32 originalInstr; // original instruction
-        u32 branch;        // branch to original func code + 4
+        Trampoline* trampoline;
     };
 
     // Inline hooks require a stack frame and
