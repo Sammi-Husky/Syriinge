@@ -33,7 +33,7 @@ ELF2REL		:= $(TOPDIR)/tools/elf2rel.exe
 
 CCFLAGS		:= -Cpp_exceptions off -c -proc gekko -nostdinc -O4,s -inline auto -fp hard -u _prolog -u _epilog -u _unresolved -enum int -sdata 0 -sdata2 0 -func_align 4
 CXXFLAGS	:= -lang=c++ $(CCFLAGS)
-LDFLAGS		:= -lcf $(LCF) -r1 -fp hard -m _prolog -g -unused 
+LDFLAGS		:= -lcf $(LCF) -r1 -fp hard -m _prolog -g -strip_partial
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
