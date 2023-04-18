@@ -53,6 +53,7 @@ namespace SyringeCore {
 
     void syInit();
     void syHookFunction(const u32 address, const void* replacement, int moduleId = -1);
+    void sySimpleHook(const u32 address, const void* replacement, int moduleId = -1);
     void syReplaceFunction(const u32 address, const void* replacement, void** original, int moduleId = -1);
     void syReplaceFunction(const void* symbol, const void* replacement, void** original, int moduleId = -1);
 

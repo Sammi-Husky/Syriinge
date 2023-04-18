@@ -1,4 +1,5 @@
 #include <OS/OSCache.h>
+#include <memory.h>
 #include <modules.h>
 #include <mu/mu_sel_char_player_area.h>
 #include <nw4r/g3d/g3d_resfile.h>
@@ -15,10 +16,36 @@ namespace CSSHooks {
     selCharLoadThread* threads[4];
     void createThreads(muSelCharPlayerArea* area)
     {
-        selCharLoadThread* thread = new selCharLoadThread(area);
+        selCharLoadThread* thread = new (Heaps::Thread) selCharLoadThread(area);
         threads[area->areaIdx] = thread;
         thread->start();
     }
+
+    // clang-format off
+
+    // Hacky fix to force setCharPic to return
+    // if data is still loading
+    asm void setCharPicFix()
+    {
+            cmpwi r3, 0
+            bne skip
+            
+            mr r3, r30
+            lis r12, 0x8069
+            ori r12, r12, 0x7474
+            mtctr r12
+            bctr
+            
+            skip:
+                mr r26, r3
+                lis r12, 0x8069
+                ori r12, r12, 0x75ac
+                mtctr r12
+                bctr
+
+            blr // required
+    }
+    // clang-format on
 
     ResFile* getCharPicTexResFile(muSelCharPlayerArea* area, u32 charKind)
     {
@@ -29,7 +56,8 @@ namespace CSSHooks {
         if (thread->m_dataReady == false)
         {
             thread->requestLoad(charKind);
-            area->setCharPic(0x28, 1, 0, false, 0, 0);
+            // area->setCharPic(0x28, 1, 0, false, 0, 0);
+            area->muObject->setFrameTex(0);
             return NULL;
         }
         else
@@ -73,6 +101,10 @@ namespace CSSHooks {
                                        reinterpret_cast<void*>(getCharPicTexResFile),
                                        NULL,
                                        Modules::SORA_MENU_SEL_CHAR);
+
+        // simple asm hook to force setCharPic to
+        // return if data is still loading
+        SyringeCore::sySimpleHook(0x806975a8, reinterpret_cast<void*>(setCharPicFix), Modules::SORA_MENU_SEL_CHAR);
 
         // hook to clean up our mess when unloading CSS
         SyringeCore::syReplaceFunction(0x806937bc,
