@@ -25,25 +25,21 @@ namespace CSSHooks {
 
     // Hacky fix to force setCharPic to return
     // if data is still loading
+    extern void setCharPic__end();
+    extern void setCharPic__cont();
     asm void setCharPicFix()
     {
+            nofralloc // don't need stack frame
+
             cmpwi r3, 0
             bne skip
             
             mr r3, r30
-            lis r12, 0x8069
-            ori r12, r12, 0x7474
-            mtctr r12
-            bctr
+            b setCharPic__end // branch to end of original func
             
             skip:
                 mr r26, r3
-                lis r12, 0x8069
-                ori r12, r12, 0x75ac
-                mtctr r12
-                bctr
-
-            blr // required
+                b setCharPic__cont // continue where we left off
     }
     // clang-format on
 

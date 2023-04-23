@@ -1,10 +1,11 @@
-#include "css_hooks.h"
-#include "sy_core.h"
-#include "test_hooks.h"
 #include <OS/OSError.h>
 #include <gf/gf_file_io.h>
 #include <gf/gf_task.h>
 #include <memory.h>
+
+#include "css_hooks.h"
+#include "net_log.h"
+#include "sy_core.h"
 
 namespace Syringe {
 
@@ -27,6 +28,9 @@ namespace Syringe {
             (*ctor)();
         }
         SyringeCore::syInit();
+
+        NetLog::Init();
+
         CSSHooks::InstallHooks();
     }
 

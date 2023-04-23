@@ -72,7 +72,7 @@ export HFILES := $(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 # For REL linking
 export LDFILES		:= $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.ld)))
-export MAPFILE		:= $(CURDIR)/lib/BrawlHeaders/RSBE01.lst
+export MAPFILE		:= $(CURDIR)/lib/BrawlHeaders/RSBE01.lst $(CURDIR)/EXTRA.lst
 export LCF			:= $(TOPDIR)/rel.lcf
 
 #---------------------------------------------------------------------------------
@@ -83,7 +83,11 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 			-I$(CURDIR)/lib/PowerPC_EABI_Support/Runtime/Inc \
 			-I$(CURDIR)/lib/BrawlHeaders/Brawl/Include \
 			-I$(CURDIR)/lib/BrawlHeaders/nw4r/include \
-			-I$(CURDIR)/lib/BrawlHeaders/rvl/Include \
+			-I$(CURDIR)/lib/BrawlHeaders/OpenRVL/include/ \
+			-I$(CURDIR)/lib/BrawlHeaders/OpenRVL/include/MetroTRK \
+			-I$(CURDIR)/lib/BrawlHeaders/OpenRVL/include/revolution \
+			-I$(CURDIR)/lib/BrawlHeaders/OpenRVL/include/RVLFaceLib \
+			-I$(CURDIR)/lib/BrawlHeaders/OpenRVL/include/stl \
 			-I$(CURDIR)/lib/BrawlHeaders/std/Include \
 			-I$(CURDIR)/lib/BrawlHeaders/utils/include \
 
@@ -124,7 +128,7 @@ $(OFILES_SOURCES) : $(HFILES)
 # REL linking
 %.rel: %.elf
 	@echo output ... $(notdir $@)
-	$(SILENTCMD)$(ELF2REL) $< -s $(MAPFILE) --rel-id $(RELID)
+	$(SILENTCMD)$(ELF2REL) $< -s $(MAPFILE) -s --rel-id $(RELID)
 	
 %.elf:
 	@echo linking ... $(notdir $@)

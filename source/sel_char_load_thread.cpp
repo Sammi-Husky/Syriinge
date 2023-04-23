@@ -75,7 +75,7 @@ selCharLoadThread::selCharLoadThread(muSelCharPlayerArea* area)
     m_isRunning = false;
     m_shouldExit = false;
 
-    OSCreateThread(&m_thread, selCharLoadThread::main, this, m_stack + sizeof(m_stack), sizeof(m_stack), 31, OS_THREAD_ATTR_ATTACH);
+    OSCreateThread(&m_thread, selCharLoadThread::main, this, m_stack + sizeof(m_stack), sizeof(m_stack), 31, 0);
 }
 
 void selCharLoadThread::start()
