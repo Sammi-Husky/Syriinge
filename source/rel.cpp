@@ -4,6 +4,7 @@
 #include <memory.h>
 
 #include "css_hooks.h"
+#include "ftp/ftp.h"
 #include "net_log.h"
 #include "sy_core.h"
 
@@ -32,6 +33,8 @@ namespace Syringe {
         NetLog::Init();
 
         CSSHooks::InstallHooks();
+
+        FTP::main();
     }
 
     void _epilog()

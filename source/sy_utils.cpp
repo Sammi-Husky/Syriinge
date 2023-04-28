@@ -1,6 +1,6 @@
 #include <types.h>
 
-namespace utils {
+namespace SyringeUtils {
     u32 EncodeBranch(u32 start, u32 dest, bool linked)
     {
         u32 offset;
@@ -19,4 +19,4 @@ namespace utils {
     {
         return EncodeBranch(start, dest, false);
     }
-} // namespace utils
+} // namespace SyringeUtils

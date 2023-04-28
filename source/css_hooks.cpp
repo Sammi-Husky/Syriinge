@@ -92,22 +92,22 @@ namespace CSSHooks {
     void InstallHooks()
     {
         // hook to load portraits from RSPs
-        SyringeCore::syReplaceFunction(0x80693940,
-                                       reinterpret_cast<void*>(getCharPicTexResFile),
-                                       NULL,
-                                       Modules::SORA_MENU_SEL_CHAR);
+        SyringeCore::syReplaceFuncRel(0x1107c,
+                                      reinterpret_cast<void*>(getCharPicTexResFile),
+                                      NULL,
+                                      Modules::SORA_MENU_SEL_CHAR);
 
         // simple asm hook to force setCharPic to
         // return if data is still loading
         SyringeCore::sySimpleHook(0x806975a8, reinterpret_cast<void*>(setCharPicFix), Modules::SORA_MENU_SEL_CHAR);
 
         // hook to clean up our mess when unloading CSS
-        SyringeCore::syReplaceFunction(0x806937bc,
-                                       reinterpret_cast<void*>(destroyPlayerAreas),
-                                       (void**)&_destroyPlayerAreas,
-                                       Modules::SORA_MENU_SEL_CHAR);
+        SyringeCore::syReplaceFunc(0x806937bc,
+                                   reinterpret_cast<void*>(destroyPlayerAreas),
+                                   (void**)&_destroyPlayerAreas,
+                                   Modules::SORA_MENU_SEL_CHAR);
 
         // hook to create threads when booting the CSS
-        SyringeCore::syHookFunction(0x80685DE8, reinterpret_cast<void*>(createThreads), Modules::SORA_MENU_SEL_CHAR);
+        SyringeCore::syInlineHook(0x80685DE8, reinterpret_cast<void*>(createThreads), Modules::SORA_MENU_SEL_CHAR);
     }
 } // namespace CSSHooks

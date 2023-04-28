@@ -8,6 +8,7 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "debug.h"
 #include "net_log.h"
 #include "sy_core.h"
 
@@ -22,9 +23,6 @@ namespace NetLog {
     static struct sockaddr_in srvaddr, cliaddr;
     OSThread thread;
     char stack[0x1000];
-
-    // func prototypes
-    void debug_log(const char* fmt, ...);
 
     static void* listen(void* param)
     {
@@ -91,13 +89,6 @@ namespace NetLog {
 
     int Init()
     {
-        // initialize socket system
-        SOInitInfo info;
-        info.allocator = SOAlloc;
-        info.dealloc = SOFree;
-        SOInit(&info);
-        SOStartupEx(0x2bf20);
-
         srv_socket = socket(AF_INET, SOCK_DGRAM, 0);
         if (srv_socket == -1)
         {
@@ -123,21 +114,13 @@ namespace NetLog {
         OSCreateThread(&thread, listen, NULL, stack + sizeof(stack), sizeof(stack), 31, 0);
         OSResumeThread(&thread);
 
-        SyringeCore::syReplaceFunction(0x801d8600, reinterpret_cast<void*>(send), (void**)&_OSReport);
+        SyringeCore::syReplaceFunc(0x801d8600, reinterpret_cast<void*>(send), (void**)&_OSReport);
         return 0;
-    }
-
-    void debug_log(const char* fmt, ...)
-    {
-        va_list args;
-        va_start(args, fmt);
-        vprintf(fmt, args);
-        va_end(args);
     }
 
     void InstallHooks()
     {
-        SyringeCore::syHookFunction(0x80682ec8, reinterpret_cast<void*>(Init), Modules::SORA_MENU_SEL_CHAR);
+        SyringeCore::syInlineHook(0x80682ec8, reinterpret_cast<void*>(Init), Modules::SORA_MENU_SEL_CHAR);
     }
 
 } // namespace NetLog
