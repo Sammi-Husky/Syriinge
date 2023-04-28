@@ -30,9 +30,9 @@ namespace Syringe {
         }
         SyringeCore::syInit();
 
-        NetLog::Init();
+        // NetLog::Init();
 
-        CSSHooks::InstallHooks();
+        // CSSHooks::InstallHooks();
 
         FTP::main();
     }

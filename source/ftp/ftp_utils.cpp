@@ -10,13 +10,10 @@
 // recv wrapper that waits until socket is ready
 int _recv(int socket, void* buffer, size_t len, int flags)
 {
-    while (!CanReceiveOnSocket(socket))
-    {
-        VIWaitForRetrace();
-        continue;
-    }
-
-    return recv(socket, buffer, len, 0);
+    if (CanReceiveOnSocket(socket))
+        return recv(socket, buffer, len, 0);
+    else
+        return -1;
 }
 
 int ftp_response(int client, int code, const char* fmt, ...)
@@ -37,24 +34,6 @@ int ftp_response(int client, int code, const char* fmt, ...)
     va_end(args);
 
     return send(client, msgbuf, len, 0);
-}
-enum FTP_CMD parse_cmd(char* buf, int len)
-{
-    for (int i = 0; i < FTP_CMD_COUNT; i++)
-    {
-        ftp_cmd cmd = FTP_CMD_LIST[i];
-
-        // iterate over characters in name (case insensitive)
-        int j;
-        for (j = 0; cmd.name[j] != '\0' && j < len; j++)
-        {
-            if (cmd.name[j] != buf[j] && cmd.name[j] != buf[j] - 32)
-                break;
-        }
-        if (cmd.name[j] == '\0')
-            return cmd.cmd;
-    }
-    return INVALID;
 }
 int get_args(char* dest, char* cmd)
 {
@@ -141,4 +120,39 @@ int recv_file(int client, char* filepath, int offset)
 
     FAFclose(handle);
     return 0;
+}
+int build_stat(FAEntryInfo* entry, char* statbuf)
+{
+    int end;
+    if (entry->_flag & 0x10)
+    {
+        if (strcmp(entry->shortname, "..") == 0)
+        {
+            end = sprintf(statbuf, "type=pdir; %s\r\n", entry->shortname);
+        }
+        else if (strcmp(entry->shortname, ".") == 0)
+        {
+            end = sprintf(statbuf, "type=cdir; %s\r\n", entry->shortname);
+        }
+        else if (entry->name[0] == 0)
+        {
+            end = sprintf(statbuf, "type=dir; %s\r\n", entry->shortname);
+        }
+        else
+        {
+            end = sprintf(statbuf, "type=dir; %s\r\n", entry->name);
+        }
+    }
+    else if (entry->_flag & 0x20)
+    {
+        if (entry->name[0] == 0)
+        {
+            end = sprintf(statbuf, "type=file;size=%d; %s\r\n", entry->size, entry->shortname);
+        }
+        else
+        {
+            end = sprintf(statbuf, "type=file;size=%d; %s\r\n", entry->size, entry->name);
+        }
+    }
+    return end;
 }
