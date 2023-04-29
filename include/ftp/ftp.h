@@ -20,6 +20,6 @@ struct FTPCommand {
 
 namespace FTP {
 
-    void main();
+    void start();
 
 } // namespace FTP

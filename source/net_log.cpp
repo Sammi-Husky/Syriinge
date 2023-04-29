@@ -118,9 +118,4 @@ namespace NetLog {
         return 0;
     }
 
-    void InstallHooks()
-    {
-        SyringeCore::syInlineHook(0x80682ec8, reinterpret_cast<void*>(Init), Modules::SORA_MENU_SEL_CHAR);
-    }
-
 } // namespace NetLog

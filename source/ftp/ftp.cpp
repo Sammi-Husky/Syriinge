@@ -2,8 +2,8 @@
 #include <OS/OSThread.h>
 #include <VI/vi.h>
 #include <fa/fa.h>
+#include <gf/gf_file_io.h>
 #include <memory.h>
-#include <net/net.h>
 #include <printf.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,30 +41,31 @@ namespace FTP {
     {
         if (strcmp(args, "..") == 0)
         {
-            cdup(session->m_cwd);
+            strncpy(session->m_buffer, session->m_cwd, PATH_BUF_SIZE);
+            cdup(session->m_buffer);
         }
         else if (args[0] == '/')
         {
             // if arg is absolute path
-            strncpy(session->m_cwd, args, 0x20);
+            strcpy(session->m_buffer, args);
         }
         else
         {
-            // if cwd is root
-            if (strcmp(session->m_cwd, "/") == 0)
-            {
-                sprintf(session->m_buffer, "/%s", args);
-            }
-            else
-            {
-                sprintf(session->m_buffer, "%s/%s", session->m_cwd, args);
-            }
-
-            // update current dir
-            strncpy(session->m_cwd, session->m_buffer, PATH_BUF_SIZE);
+            buildPath(session->m_buffer, args, session->m_cwd);
         }
 
-        ftp_response(session->m_ctrlSocket, 200, "dir changed\r\n");
+        FAHandle* dir = FAOpendir(session->m_buffer);
+        if (dir == 0)
+        {
+            ftp_response(session->m_ctrlSocket, 550, "Directory doesn't exist: %s\r\n", session->m_buffer);
+            return 0;
+        }
+        FAClosedir(dir);
+
+        // update current dir
+        strncpy(session->m_cwd, session->m_buffer, PATH_BUF_SIZE);
+
+        ftp_response(session->m_ctrlSocket, 250, "dir changed\r\n");
         return 0;
     }
     int handleLIST(FTPSession* session, char* args)
@@ -108,7 +109,7 @@ namespace FTP {
     {
         session->OpenDataConnection();
 
-        sprintf(session->m_buffer, "%s/%s", session->m_cwd, args);
+        buildPath(session->m_buffer, args, session->m_cwd);
         if (send_file(session->m_dataSocket, session->m_buffer, session->m_restoffset) >= 0)
         {
             ftp_response(session->m_ctrlSocket, 226, "Transfer complete\r\n");
@@ -122,7 +123,7 @@ namespace FTP {
     {
         session->OpenDataConnection();
 
-        sprintf(session->m_buffer, "%s/%s", session->m_cwd, args);
+        buildPath(session->m_buffer, args, session->m_cwd);
         if (recv_file(session->m_dataSocket, session->m_buffer, session->m_restoffset) >= 0)
         {
             ftp_response(session->m_ctrlSocket, 226, "Transfer complete\r\n");
@@ -214,6 +215,20 @@ namespace FTP {
         ftp_response(session->m_ctrlSocket, 230, "OK\r\n");
         return 0;
     }
+    int handleMKD(FTPSession* session, char* args)
+    {
+        buildPath(session->m_buffer, args, session->m_cwd);
+        if (gfFileIO::gfFACreateDir(session->m_buffer) == 0)
+        {
+            ftp_response(session->m_ctrlSocket, 257, "Sucessfully created directory %s\r\n", args);
+        }
+        else
+        {
+            ftp_response(session->m_ctrlSocket, 550, "Failed to create directory\r\n");
+            return -1;
+        }
+        return 0;
+    }
 
     FTPCommand FTP_CMD_LIST[] = {
         { "USER", handleUSER },
@@ -228,6 +243,7 @@ namespace FTP {
         { "TYPE", handleTYPE },
         { "PASV", handlePASV },
         { "SYST", handleSYST },
+        { "MKD", handleMKD },
         { "", NULL }
     };
 
@@ -295,12 +311,7 @@ namespace FTP {
 
                 char args[0x80];
                 get_args(args, buffer);
-                int err = cmd->handler(session, args);
-
-                if (err)
-                {
-                    ftp_response(session->m_ctrlSocket, 500, "Error handling cmd: %s\r\n", cmd->name);
-                }
+                cmd->handler(session, args);
             }
             buffernext = 0;
         }
@@ -312,6 +323,7 @@ namespace FTP {
             return;
         }
     }
+
     static void* run(void*)
     {
         int server_socket = create_server(2121, 5);
@@ -346,20 +358,14 @@ namespace FTP {
                     handleSession(sessions[i]);
             }
         }
+
         return NULL;
     }
 
     OSThread thread;
     char stack[0x2000];
-    void main()
+    void start()
     {
-        // initialize socket system
-        SOInitInfo info;
-        info.allocator = SOAlloc;
-        info.dealloc = SOFree;
-        SOInit(&info);
-        SOStartupEx(0x2bf20);
-
         OSCreateThread(&thread, run, NULL, stack + sizeof(stack), sizeof(stack), 31, 0);
         OSResumeThread(&thread);
     }

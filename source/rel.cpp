@@ -2,6 +2,7 @@
 #include <gf/gf_file_io.h>
 #include <gf/gf_task.h>
 #include <memory.h>
+#include <net/net.h>
 
 #include "css_hooks.h"
 #include "ftp/ftp.h"
@@ -20,6 +21,15 @@ namespace Syringe {
     void _unresolved();
     }
 
+    void InitNetwork()
+    {
+        SOInitInfo info;
+        info.allocator = SOAlloc;
+        info.dealloc = SOFree;
+        SOInit(&info);
+        SOStartupEx(0x2bf20);
+    }
+
     void _prolog()
     {
         // Run global constructors
@@ -28,13 +38,16 @@ namespace Syringe {
         {
             (*ctor)();
         }
+
+        // initialize core systems
         SyringeCore::syInit();
 
-        // NetLog::Init();
+        // Initialize the socket systems
+        InitNetwork();
 
-        // CSSHooks::InstallHooks();
-
-        FTP::main();
+        FTP::start();             // FTP server
+        NetLog::Init();           // Network logging interface
+        CSSHooks::InstallHooks(); // Async RSP loading on the CSS
     }
 
     void _epilog()

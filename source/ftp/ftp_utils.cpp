@@ -156,3 +156,14 @@ int build_stat(FAEntryInfo* entry, char* statbuf)
     }
     return end;
 }
+void buildPath(char* dest, char* file, char* cwd)
+{
+    if (strcmp(cwd, "/") == 0)
+    {
+        sprintf(dest, "/%s", file);
+    }
+    else
+    {
+        sprintf(dest, "%s/%s", cwd, file);
+    }
+}

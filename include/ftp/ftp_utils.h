@@ -13,3 +13,4 @@ int recv_file(int client, char* filepath, int offset);
 // recv wrapper that waits until socket is ready
 int _recv(int socket, void* buffer, size_t len, int flags);
 int build_stat(FAEntryInfo* entry, char* statbuf);
+void buildPath(char* dest, char* file, char* cwd);
