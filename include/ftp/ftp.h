@@ -1,6 +1,7 @@
 #pragma once
 
-#define BUFF_SIZE 1024
+#define ARG_BUF_SIZE 0x80
+#define DATA_BUF_SIZE 1024
 #define PATH_BUF_SIZE 4096
 
 enum FTP_DATA_MODE {
@@ -15,7 +16,7 @@ enum FTP_XFER_MODE {
 struct FTPSession;
 struct FTPCommand {
     char* name;
-    int (*handler)(FTPSession* session, char* args);
+    int (*handler)(FTPSession* session, const char* args);
 };
 
 namespace FTP {

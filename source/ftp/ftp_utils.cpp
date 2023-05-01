@@ -18,7 +18,7 @@ int _recv(int socket, void* buffer, size_t len, int flags)
 
 int ftp_response(int client, int code, const char* fmt, ...)
 {
-    char msgbuf[BUFF_SIZE];
+    char msgbuf[DATA_BUF_SIZE];
     int len;
     if (code < 0)
     {
@@ -35,7 +35,7 @@ int ftp_response(int client, int code, const char* fmt, ...)
 
     return send(client, msgbuf, len, 0);
 }
-int get_args(char* dest, char* cmd)
+int get_args(char* dest, const char* cmd)
 {
     int i, j;
 
@@ -80,7 +80,7 @@ int create_server(int port, int maxClients)
     }
     return server;
 }
-int send_file(int client, char* file, int offset)
+int send_file(int client, const char* file, int offset)
 {
     FAHandle* handle = FAFopen(file, "r");
     if (!handle)
@@ -91,8 +91,8 @@ int send_file(int client, char* file, int offset)
     FAFseek(handle, offset, 0);
 
     int n;
-    char filebuf[BUFF_SIZE + 1];
-    while ((n = FAFread(filebuf, 1, BUFF_SIZE, handle)) > 0)
+    char filebuf[DATA_BUF_SIZE + 1];
+    while ((n = FAFread(filebuf, 1, DATA_BUF_SIZE, handle)) > 0)
     {
         int sent = send(client, filebuf, n, 0);
         filebuf[n] = 0;
@@ -101,7 +101,7 @@ int send_file(int client, char* file, int offset)
 
     return 0;
 }
-int recv_file(int client, char* filepath, int offset)
+int recv_file(int client, const char* filepath, int offset)
 {
     FAHandle* handle = FAFopen(filepath, "w");
     if (!handle)
@@ -112,8 +112,8 @@ int recv_file(int client, char* filepath, int offset)
     FAFseek(handle, offset, 0);
 
     int n;
-    char filebuf[BUFF_SIZE + 1];
-    while ((n = _recv(client, filebuf, BUFF_SIZE, 0)) > 0)
+    char filebuf[DATA_BUF_SIZE + 1];
+    while ((n = _recv(client, filebuf, DATA_BUF_SIZE, 0)) > 0)
     {
         FAFwrite(filebuf, 1, n, handle);
     }
@@ -156,7 +156,7 @@ int build_stat(FAEntryInfo* entry, char* statbuf)
     }
     return end;
 }
-void buildPath(char* dest, char* file, char* cwd)
+void buildPath(char* dest, const char* file, const char* cwd)
 {
     if (strcmp(cwd, "/") == 0)
     {
