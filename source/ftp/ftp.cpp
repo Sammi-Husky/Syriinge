@@ -1,9 +1,11 @@
 
 #include <OS/OSThread.h>
 #include <VI/vi.h>
+#include <extras.h>
 #include <fa/fa.h>
 #include <gf/gf_file_io.h>
 #include <memory.h>
+#include <pf/pf.h>
 #include <printf.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,6 +16,8 @@
 #include "ftp/ftp_session.h"
 #include "ftp/ftp_utils.h"
 #include "sy_core.h"
+
+#define STACK_SIZE 0x4000
 
 namespace FTP {
 
@@ -38,8 +42,18 @@ namespace FTP {
             strncat(cwd, "/", 2);
     }
 
-    int handleCWD(FTPSession* session, const char* args)
+    int handleCWD(FTPSession* session, char* args)
     {
+        // remove trailing slash
+        for (int i = ARG_BUF_SIZE; i > 0; i--)
+        {
+            if (args[i] == '/' && args[i + 1] == '\0')
+            {
+                args[i] = '\0';
+                break;
+            }
+        }
+
         if (strcmp(args, "..") == 0)
         {
             strncpy(session->m_buffer, session->m_cwd, PATH_BUF_SIZE);
@@ -69,7 +83,7 @@ namespace FTP {
         ftp_response(session->m_ctrlSocket, 250, "dir changed\r\n");
         return 0;
     }
-    int handleMLSD(FTPSession* session, const char* args)
+    int handleMLSD(FTPSession* session, char* args)
     {
         // open connection
         session->OpenDataConnection();
@@ -92,12 +106,12 @@ namespace FTP {
         }
 
         int len = 0;
-        len = build_stat(&info, session->m_buffer);
+        len = build_stat_mlst(&info, session->m_buffer);
         send(session->m_dataSocket, session->m_buffer, len - 1, 0);
 
         while (FAFsnext(&info) == 0)
         {
-            len = build_stat(&info, session->m_buffer);
+            len = build_stat_mlst(&info, session->m_buffer);
             send(session->m_dataSocket, session->m_buffer, len - 1, 0);
         }
 
@@ -107,7 +121,7 @@ namespace FTP {
 
         return 0;
     }
-    int handleRETR(FTPSession* session, const char* args)
+    int handleRETR(FTPSession* session, char* args)
     {
         session->OpenDataConnection();
 
@@ -130,7 +144,7 @@ namespace FTP {
         session->CloseDataConnection();
         return 0;
     }
-    int handleSTOR(FTPSession* session, const char* args)
+    int handleSTOR(FTPSession* session, char* args)
     {
         session->OpenDataConnection();
 
@@ -153,7 +167,7 @@ namespace FTP {
         session->CloseDataConnection();
         return 0;
     }
-    int handleDELE(FTPSession* session, const char* args)
+    int handleDELE(FTPSession* session, char* args)
     {
         if (args[0] == '/')
         {
@@ -174,24 +188,24 @@ namespace FTP {
 
         return 0;
     }
-    int handleREST(FTPSession* session, const char* args)
+    int handleREST(FTPSession* session, char* args)
     {
         session->m_restoffset = atoi(args);
         ftp_response(session->m_ctrlSocket, 350, "REST, continue transfer at: 0x%x\r\n", session->m_restoffset);
         return 0;
     }
-    int handleCDUP(FTPSession* session, const char* args)
+    int handleCDUP(FTPSession* session, char* args)
     {
         cdup(session->m_cwd);
         ftp_response(session->m_ctrlSocket, 200, "OK\r\n");
         return 0;
     }
-    int handlePWD(FTPSession* session, const char* args)
+    int handlePWD(FTPSession* session, char* args)
     {
         ftp_response(session->m_ctrlSocket, 257, "\"%s\"\r\n", session->m_cwd);
         return 0;
     }
-    int handleTYPE(FTPSession* session, const char* args)
+    int handleTYPE(FTPSession* session, char* args)
     {
         if (args[0] == 'A')
         {
@@ -209,7 +223,7 @@ namespace FTP {
         ftp_response(session->m_ctrlSocket, 200, "OK\r\n");
         return 0;
     }
-    int handlePASV(FTPSession* session, const char* args)
+    int handlePASV(FTPSession* session, char* args)
     {
         int retry = 100;
         int pasv_port;
@@ -244,19 +258,30 @@ namespace FTP {
         debug_log("Entering PASV mode, port : %hu\n", pasv_port);
         return 0;
     }
-    int handleSYST(FTPSession* session, const char* args)
+    int handleSYST(FTPSession* session, char* args)
     {
         ftp_response(session->m_ctrlSocket, 215, "UNIX\r\n");
         return 0;
     }
-    int handleUSER(FTPSession* session, const char* args)
+    int handleUSER(FTPSession* session, char* args)
     {
         ftp_response(session->m_ctrlSocket, 230, "OK\r\n");
         return 0;
     }
-    int handleMKD(FTPSession* session, const char* args)
+    int handleMKD(FTPSession* session, char* args)
     {
-        buildPath(session->m_buffer, args, session->m_cwd);
+        if (args[0] == '/')
+        {
+            // if arg is absolute path
+            strcpy(session->m_buffer, args);
+        }
+        else
+        {
+            buildPath(session->m_buffer, args, session->m_cwd);
+        }
+
+        debug_log("New: %s\n", session->m_buffer);
+
         if (gfFileIO::gfFACreateDir(session->m_buffer) == 0)
         {
             ftp_response(session->m_ctrlSocket, 257, "Sucessfully created directory %s\r\n", args);
@@ -268,7 +293,7 @@ namespace FTP {
             return -1;
         }
     }
-    int handleRMD(FTPSession* session, const char* args)
+    int handleRMD(FTPSession* session, char* args)
     {
         if (args[0] == '/')
         {
@@ -281,10 +306,9 @@ namespace FTP {
         }
         int err = FARemove(session->m_buffer);
         ftp_response(session->m_ctrlSocket, 250, "OK\r\n");
-        debug_log("rmdir(%s) status: %d\n", session->m_buffer, err);
         return err;
     }
-    int handleRNFR(FTPSession* session, const char* args)
+    int handleRNFR(FTPSession* session, char* args)
     {
         if (args[0] == '/')
         {
@@ -299,45 +323,159 @@ namespace FTP {
         ftp_response(session->m_ctrlSocket, 350, "RNFR\r\n");
         return 0;
     }
-    int handleRNTO(FTPSession* session, const char* args)
+    int handleRNTO(FTPSession* session, char* args)
     {
-        char filebuf[DATA_BUF_SIZE];
-        FAFStat st;
-        FAFstat(session->m_buffer, &st);
-
-        FAHandle* src = FAFopen(session->m_buffer, "r");
-        FAHandle* dst = FAFopen(args, "w");
-        int i = st.filesize;
-        while (i > 0)
+        char tmp[PATH_BUF_SIZE];
+        if (args[0] == '/')
         {
-            if (i > DATA_BUF_SIZE)
-            {
-                FAFread(filebuf, 1, DATA_BUF_SIZE, src);
-                FAFwrite(filebuf, 1, DATA_BUF_SIZE, dst);
-                i -= DATA_BUF_SIZE;
-            }
-            else
-            {
-                FAFread(filebuf, 1, i, src);
-                FAFwrite(filebuf, 1, i, dst);
-                break;
-            }
+            // if arg is absolute path
+            strncpy(tmp, args, ARG_BUF_SIZE);
         }
-        FAFclose(src);
-        FAFclose(dst);
-        FARemove(session->m_buffer);
+        else
+        {
+            buildPath(tmp, args, session->m_cwd);
+        }
+
+        pfstat st;
+        FAFstat(session->m_buffer, &st);
+        if (st.flags & 0x10)
+        {
+            renameFolder(tmp, session->m_buffer);
+        }
+        else if (st.flags & 0x20)
+        {
+            renameFile(tmp, session->m_buffer);
+        }
         ftp_response(session->m_ctrlSocket, 250, "RNTO success\r\n");
         return 0;
     }
-    int handleFEAT(FTPSession* session, const char* args)
+    int handleFEAT(FTPSession* session, char* args)
     {
         ftp_response(session->m_ctrlSocket, -211,
                      "\r\n"
                      " PASV\r\n"
                      " MLST\r\n"
+                     " MLSD\r\n"
                      "\r\n"
                      "211 End\r\n");
         return 0;
+    }
+    int handleOPTS(FTPSession* session, char* args)
+    {
+        if (stricmp(args, "UTF8") == 0 || stricmp(args, "UTF8 ON") == 0)
+        {
+            ftp_response(session->m_ctrlSocket, 200, "OK\r\n");
+            return 0;
+        }
+
+        ftp_response(session->m_ctrlSocket, 504, "Invalid Argument\r\n");
+        return -1;
+    }
+    int handleLIST(FTPSession* session, char* args)
+    {
+        // open connection
+        session->OpenDataConnection();
+
+        FAEntryInfo info;
+        if (strcmp(session->m_cwd, "/") == 0)
+        {
+            // if args not empty copy to path, otherwise just use wildcard
+            sprintf(session->m_buffer, "%s*", session->m_cwd);
+        }
+        else
+        {
+            sprintf(session->m_buffer, "%s/*", session->m_cwd);
+        }
+        int ret = FAFsfirst(session->m_buffer, 0x30, &info);
+        if (ret != 0)
+        {
+            debug_log("Failed to intiate dir search (%s)\n", session->m_buffer);
+            return -1;
+        }
+
+        int len = 0;
+        len = build_stat_list(&info, session->m_buffer);
+        send(session->m_dataSocket, session->m_buffer, len - 1, 0);
+
+        while (FAFsnext(&info) == 0)
+        {
+            len = build_stat_list(&info, session->m_buffer);
+            send(session->m_dataSocket, session->m_buffer, len - 1, 0);
+        }
+
+        // close connection
+        ftp_response(session->m_ctrlSocket, 226, "Transfer Complete\r\n");
+        session->CloseDataConnection();
+
+        return 0;
+    }
+    int handleNOOP(FTPSession* session, char* args)
+    {
+        ftp_response(session->m_ctrlSocket, 200, "OK\r\n");
+        return 0;
+    }
+    int handleSITE(FTPSession* session, char* args)
+    {
+        ftp_response(session->m_ctrlSocket, 202, "Not Supported\r\n");
+        return 0;
+    }
+    int handleSIZE(FTPSession* session, char* args)
+    {
+        pfstat st;
+
+        if (args[0] == '/')
+        {
+            // if arg is absolute path
+            strncpy(session->m_buffer, args, ARG_BUF_SIZE);
+        }
+        else
+        {
+            buildPath(session->m_buffer, args, session->m_cwd);
+        }
+
+        if (FAFstat(session->m_buffer, &st) == 0)
+        {
+            ftp_response(session->m_ctrlSocket, 213, "%d\r\n", st.filesize);
+            return 0;
+        }
+
+        ftp_response(session->m_ctrlSocket, 550, "Failed to get filesize\r\n");
+        return -1;
+    }
+    int handleMDTM(FTPSession* session, char* args)
+    {
+        pfstat st;
+        if (args[0] == '/')
+        {
+            // if arg is absolute path
+            strncpy(session->m_buffer, args, ARG_BUF_SIZE);
+        }
+        else
+        {
+            buildPath(session->m_buffer, args, session->m_cwd);
+        }
+
+        if (FAFstat(session->m_buffer, &st) == 0)
+        {
+            u16 date = st.modifiedDate;
+            u16 time = st.modifiedTime;
+
+            int year, month, day;
+            year = 1980 + (date >> 9);
+            month = (date & 0x1E0) >> 5;
+            day = date & 0x1F;
+
+            int hour, min, sec;
+            hour = time >> 11;
+            min = (time & 0x7E0) >> 5;
+            sec = (time & 0x1F) * 2;
+
+            ftp_response(session->m_ctrlSocket, 213, "%4d%02d%02d%02d%02d%02d\r\n", year, month, day, hour, min, sec);
+            return 0;
+        }
+
+        ftp_response(session->m_ctrlSocket, 550, "Error getting datetime\r\n");
+        return -1;
     }
 
     FTPCommand FTP_CMD_LIST[] = {
@@ -349,8 +487,9 @@ namespace FTP {
         { "PWD", handlePWD },
         { "CWD", handleCWD },
         { "CDUP", handleCDUP },
-        // { "LIST", handleLIST },
+        { "LIST", handleLIST },
         { "MLSD", handleMLSD },
+        { "MLST", handleMLSD },
         { "TYPE", handleTYPE },
         { "PASV", handlePASV },
         { "FEAT", handleFEAT },
@@ -359,6 +498,11 @@ namespace FTP {
         { "RMD", handleRMD },
         { "RNFR", handleRNFR },
         { "RNTO", handleRNTO },
+        { "OPTS", handleOPTS },
+        { "NOOP", handleNOOP },
+        { "SITE", handleSITE },
+        { "SIZE", handleSIZE },
+        { "MDTM", handleMDTM },
         { "", NULL }
     };
 
@@ -504,7 +648,7 @@ namespace FTP {
     // clang-format on
 
     OSThread thread;
-    char stack[0x2000];
+    char* stack;
     void start()
     {
         // allows FARemove to delete directories
@@ -515,7 +659,11 @@ namespace FTP {
         // to delete a non-empty directory
         SyringeCore::sySimpleHook(0x803e4d28, reinterpret_cast<void*>(PFFILE_p_remove_hook));
 
-        OSCreateThread(&thread, run, NULL, stack + sizeof(stack), sizeof(stack), 31, 0);
+        // create stack on Network
+        // heap to save space in ours
+        stack = new (Heaps::Network) char[STACK_SIZE];
+
+        OSCreateThread(&thread, run, NULL, stack + STACK_SIZE, STACK_SIZE, 31, 0);
         OSResumeThread(&thread);
     }
 }

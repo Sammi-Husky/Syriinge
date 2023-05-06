@@ -1,8 +1,10 @@
 #include <fa/fa.h>
 #include <net/net.h>
+#include <pf/pf.h>
 #include <string.h>
 
 #include "VI/vi.h"
+#include "datetime.h"
 #include "debug.h"
 #include "ftp/ftp.h"
 #include "printf.h"
@@ -121,7 +123,40 @@ int recv_file(int client, const char* filepath, int offset)
     FAFclose(handle);
     return 0;
 }
-int build_stat(FAEntryInfo* entry, char* statbuf)
+void build_stat_datetime(char* dst, u16 date, u16 time)
+{
+    u16 tdDate, tdTime;
+
+    char tmp[0x10]; // for month str
+    dosDateToS(tmp, date);
+
+    PFENT_getcurrentDateTimeForEnt(&tdDate, &tdTime);
+
+    // date
+    int year = 1980 + (date >> 9);
+    int month = (date & 0x1E0) >> 5;
+    int day = date & 0x1F;
+
+    // date
+    int tdYear = 1980 + (tdDate >> 9);
+    int tdMonth = (tdDate & 0x1E0) >> 5;
+    int tdDay = tdDate & 0x1F;
+
+    int difference = ((tdYear - year) * 12) + (tdMonth - month);
+    if (difference > 6)
+    {
+        sprintf(dst, "%s %4d", tmp, year);
+    }
+    else
+    {
+        // time
+        int hour = time >> 11;
+        int min = (time & 0x7E0) >> 5;
+        int sec = (time & 0x1F) * 2;
+        sprintf(dst, "%s %02d:%02d", tmp, hour, min);
+    }
+}
+int build_stat_mlst(FAEntryInfo* entry, char* statbuf)
 {
     int end;
     if (entry->_flag & 0x10)
@@ -156,6 +191,40 @@ int build_stat(FAEntryInfo* entry, char* statbuf)
     }
     return end;
 }
+int build_stat_list(FAEntryInfo* entry, char* statbuf)
+{
+    char fmt[] = "%crw-rw-rw- 1 root root %d %s %s\r\n";
+    char date[0x10];
+    char time[0x8];
+
+    char datetime[0x20];
+    build_stat_datetime(datetime, entry->modifiedDate, entry->modifiedTime);
+
+    int end;
+    if (entry->_flag & 0x10)
+    {
+        if (strcmp(entry->shortname, ".") == 0 || strcmp(entry->shortname, "..") == 0 || entry->name[0] == 0)
+        {
+            end = sprintf(statbuf, fmt, 'd', 0, datetime, entry->shortname);
+        }
+        else
+        {
+            end = sprintf(statbuf, fmt, 'd', 0, datetime, entry->name);
+        }
+    }
+    else if (entry->_flag & 0x20)
+    {
+        if (entry->name[0] == 0)
+        {
+            end = sprintf(statbuf, fmt, '-', entry->size, datetime, entry->shortname);
+        }
+        else
+        {
+            end = sprintf(statbuf, fmt, '-', entry->size, datetime, entry->name);
+        }
+    }
+    return end;
+}
 void buildPath(char* dest, const char* file, const char* cwd)
 {
     if (strcmp(cwd, "/") == 0)
@@ -166,4 +235,72 @@ void buildPath(char* dest, const char* file, const char* cwd)
     {
         sprintf(dest, "%s/%s", cwd, file);
     }
+}
+int renameFile(const char* newName, const char* oldName)
+{
+    char filebuf[DATA_BUF_SIZE];
+    pfstat st;
+    FAFstat(oldName, &st);
+
+    FAHandle* src = FAFopen(oldName, "r");
+    FAHandle* dst = FAFopen(newName, "w");
+    int i = st.filesize;
+    while (i > 0)
+    {
+        if (i > DATA_BUF_SIZE)
+        {
+            FAFread(filebuf, 1, DATA_BUF_SIZE, src);
+            FAFwrite(filebuf, 1, DATA_BUF_SIZE, dst);
+            i -= DATA_BUF_SIZE;
+        }
+        else
+        {
+            FAFread(filebuf, 1, i, src);
+            FAFwrite(filebuf, 1, i, dst);
+            break;
+        }
+    }
+    FAFclose(src);
+    FAFclose(dst);
+    FARemove(oldName);
+
+    return 0;
+}
+int renameFolder(const char* newName, const char* oldName)
+{
+    int err;
+    PFSTR str;
+    PFENT_ITER iter;
+    PFENT entry;
+    char dirent[0x20];
+    err = PFSTR_InitStr(&str, oldName, 0x1);
+    if (err == 0)
+    {
+        PFVOL* vol = PFPATH_GetVolumeFromPath(&str);
+        PF_enterCritical(&vol->_0x1f90);
+        vol->_0x1644 = 0x0;
+
+        // copy old dirent and delete it
+        PFENT_ITER_GetEntryOfPath(&iter, &entry, vol, &str, 0x0);
+        PFSEC_ReadData(entry.cache, &dirent, entry.sector, entry.offset, 0x20, &err, 0x0);
+        PFENT_RemoveEntry(&entry, &iter);
+
+        // create new directory
+        err = PFSTR_InitStr(&str, newName, 0x1);
+        PFDIR_p_mkdir(vol, &str, 0x0, NULL);
+
+        // write sector and filesize from old
+        // directory entry to our new one
+        PFENT_ITER_GetEntryOfPath(&iter, &entry, vol, &str, 0x0);
+        PFFAT_FreeChain(&iter._0x8, entry._0x234, 0xffffffff, entry._0x228);
+        PFSEC_WriteData(entry.cache, &dirent[0x14], entry.sector, entry.offset + 0x14, 0x2, &err, 0x0);
+        PFSEC_WriteData(entry.cache, &dirent[0x1A], entry.sector, entry.offset + 0x1A, 0x2, &err, 0x0);
+        PFSEC_WriteData(entry.cache, &dirent[0x1C], entry.sector, entry.offset + 0x1c, 0x4, &err, 0x0);
+
+        err = PFCACHE_FlushFATCache(vol);
+        err = PFCACHE_FlushDataCacheSpecific(vol, 0x0);
+        PF_exitCritical(&vol->_0x1f90);
+    }
+
+    return PFAPI_convertReturnValue(err);
 }
