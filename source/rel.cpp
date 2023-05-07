@@ -28,12 +28,14 @@ namespace Syringe {
 
     int loadPlugins()
     {
-        FAEntryInfo info;
         int plugins = 0;
-        if (FAFsfirst("/Minusery/pf/module/plugins/*.rel", 0x20, &info) == 0)
+        FAEntryInfo info;
+
+        char tmp[0x80];
+        sprintf(tmp, "%spf/module/plugins/*.rel", MOD_PATCH_DIR);
+        if (FAFsfirst(tmp, 0x20, &info) == 0)
         {
             plugins++;
-            char tmp[0x80];
             if (info.name[0] == 0)
                 sprintf(tmp, "plugins/%s", info.shortname);
             else
@@ -55,6 +57,7 @@ namespace Syringe {
                 plugins++;
             }
         }
+
         return plugins;
     }
 

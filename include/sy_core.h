@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <types.h>
 
+extern "C" char MOD_PATCH_DIR[0x18];
+
 namespace SyringeCore {
 
     struct Trampoline {
