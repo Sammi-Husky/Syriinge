@@ -39,6 +39,8 @@ This project makes use of the work of several other open-source projects:
 
 - [BrawlHeaders](https://github.com/Sammi-Husky/BrawlHeaders), an open source collaborative repository for Brawl header files
 
+- [elf2rel](https://github.com/Sammi-Husky/elf2rel), a utility for converting `.elf` files to `.rel` files while linking them against a symbol map.
+
 ## License
 
 The code contained in this repository, not including the external libraries, is licensed under the MIT license. For more information, see the file `LICENSE` on the root of the repository.
