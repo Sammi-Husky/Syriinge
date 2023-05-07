@@ -33,7 +33,7 @@ ELF2REL		:= $(TOPDIR)/tools/elf2rel.exe
 
 CCFLAGS		:= -Cpp_exceptions off -c -proc gekko -nostdinc -O4,s -inline auto -fp hard -u _prolog -u _epilog -u _unresolved -enum int -sdata 0 -sdata2 0 -func_align 4
 CXXFLAGS	:= -lang=c++ $(CCFLAGS)
-LDFLAGS		:= -lcf $(LCF) -r1 -fp hard -m _prolog -g -strip_partial
+LDFLAGS		:= -lcf $(LCF) -r1 -fp hard -m _prolog -g
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -72,7 +72,7 @@ export HFILES := $(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 # For REL linking
 export LDFILES		:= $(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.ld)))
-export MAPFILE		:= $(CURDIR)/lib/BrawlHeaders/RSBE01.lst $(CURDIR)/EXTRA.lst
+export MAPFILE		:= $(CURDIR)/lib/BrawlHeaders/RSBE01.lst
 export LCF			:= $(TOPDIR)/rel.lcf
 
 #---------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ $(OFILES_SOURCES) : $(HFILES)
 # REL linking
 %.rel: %.elf
 	@echo output ... $(notdir $@)
-	$(SILENTCMD)$(ELF2REL) $< -s $(MAPFILE) -s --rel-id $(RELID)
+	$(SILENTCMD)$(ELF2REL) $< -s $(MAPFILE) --rel-id $(RELID)
 	
 %.elf:
 	@echo linking ... $(notdir $@)

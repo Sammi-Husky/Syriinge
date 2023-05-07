@@ -1,12 +1,8 @@
-#include <OS/OSError.h>
-#include <gf/gf_file_io.h>
-#include <gf/gf_task.h>
-#include <memory.h>
+#include <fa/fa.h>
+#include <gf/gf_module.h>
 #include <net/net.h>
+#include <printf.h>
 
-#include "css_hooks.h"
-#include "ftp/ftp.h"
-#include "net_log.h"
 #include "sy_core.h"
 
 namespace Syringe {
@@ -30,6 +26,38 @@ namespace Syringe {
         SOStartupEx(0x2bf20);
     }
 
+    int loadPlugins()
+    {
+        FAEntryInfo info;
+        int plugins = 0;
+        if (FAFsfirst("/Minusery/pf/module/plugins/*.rel", 0x20, &info) == 0)
+        {
+            plugins++;
+            char tmp[0x80];
+            if (info.name[0] == 0)
+                sprintf(tmp, "plugins/%s", info.shortname);
+            else
+                sprintf(tmp, "plugins/%s", info.name);
+
+            gfModuleManager::LoadRequestResult res;
+            gfModuleManager* instance = gfModuleManager::getInstance();
+            gfModuleManager::loadModuleRequest(&res, instance, tmp, Heaps::Syringe, true, false);
+
+            while (FAFsnext(&info) == 0)
+            {
+                if (info.name[0] == 0)
+                    sprintf(tmp, "plugins/%s", info.shortname);
+                else
+                    sprintf(tmp, "plugins/%s", info.name);
+
+                gfModuleManager* instance = gfModuleManager::getInstance();
+                gfModuleManager::loadModuleRequest(&res, instance, tmp, Heaps::Syringe, true, false);
+                plugins++;
+            }
+        }
+        return plugins;
+    }
+
     void _prolog()
     {
         // Run global constructors
@@ -45,9 +73,7 @@ namespace Syringe {
         // Initialize the socket systems
         InitNetwork();
 
-        FTP::start();             // FTP server
-        NetLog::Init();           // Network logging interface
-        CSSHooks::InstallHooks(); // Async RSP loading on the CSS
+        loadPlugins();
     }
 
     void _epilog()
