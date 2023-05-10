@@ -1,4 +1,5 @@
 #include <fa/fa.h>
+#include <gf/gf_heap_manager.h>
 #include <gf/gf_module.h>
 #include <net/net.h>
 #include <printf.h>
@@ -26,24 +27,38 @@ namespace Syringe {
         SOStartupEx(0x2bf20);
     }
 
-    int loadPlugins()
+    gfModule* loadModule(const char* path, HeapType heap)
     {
-        int plugins = 0;
-        FAEntryInfo info;
+        gfFileIOHandle handle;
+        handle.read(path, Heaps::MenuInstance, 0);
+        void* buffer = handle.getBuffer();
+        void* heapAddr = gfHeapManager::getHeap(heap);
+        size_t size = handle.getSize();
 
+        gfModule* module = gfModule::create(heapAddr, buffer, size);
+
+        // call prolog function
+        ((void (*)())module->header->prologOffset)();
+
+        free(buffer);
+        handle.release();
+
+        return module;
+    }
+
+    void loadPlugins()
+    {
+        FAEntryInfo info;
         char tmp[0x80];
-        sprintf(tmp, "%spf/module/plugins/*.rel", MOD_PATCH_DIR);
+        sprintf(tmp, "%spf/plugins/*.rel", MOD_PATCH_DIR);
         if (FAFsfirst(tmp, 0x20, &info) == 0)
         {
-            plugins++;
             if (info.name[0] == 0)
                 sprintf(tmp, "plugins/%s", info.shortname);
             else
                 sprintf(tmp, "plugins/%s", info.name);
 
-            gfModuleManager::LoadRequestResult res;
-            gfModuleManager* instance = gfModuleManager::getInstance();
-            gfModuleManager::loadModuleRequest(&res, instance, tmp, Heaps::Syringe, true, false);
+            loadModule(tmp, Heaps::Syringe);
 
             while (FAFsnext(&info) == 0)
             {
@@ -52,13 +67,9 @@ namespace Syringe {
                 else
                     sprintf(tmp, "plugins/%s", info.name);
 
-                gfModuleManager* instance = gfModuleManager::getInstance();
-                gfModuleManager::loadModuleRequest(&res, instance, tmp, Heaps::Syringe, true, false);
-                plugins++;
+                loadModule(tmp, Heaps::Syringe);
             }
         }
-
-        return plugins;
     }
 
     void _prolog()
