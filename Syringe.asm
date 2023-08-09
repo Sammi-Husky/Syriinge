@@ -52,9 +52,12 @@ HOOK @ $800272b8
 ########################################
 Syringe Core Loader [Sammi Husky]
 ########################################
-HOOK @ $80ad6738
+HOOK @ $80016dd4
 {
-    stwu r1, -0x20(r1)
+    stwu r1, -0xa0(r1)
+    mflr r0
+    stw r0, 0xa4(r1)
+    stmw r3, 0x20(r1)
     bl _main
 
     word 0x817ba5a0 # heap start
@@ -72,24 +75,17 @@ HOOK @ $80ad6738
 _main:
     mflr r31
     
-    # check if we have BrawlEx. 
-    # we do this because if BEX is running
-    # our heap addr will be different
-    li r3, 0x3B
-    lis r12, 0x8002
-    ori r12, r12, 0x49cc
-    mtctr r12
-    bctrl # getHeap
-    cmpwi r3, 0
     lswi r3, r31, 16 # loads our data into r3-r6
-    #beq _noBex
+
+    # Uncomment the below if using BrawlEx
+    beq _storeSize
     lis r0, 1       # \
     sub r3, r3, r0  # | If brawlex is present, our heap start will
     sub r4, r4, r0  # | need to be 0x10000 earlier and menu instance
     sub r5, r5, r0  # | needs to be reduced by the same amount.
     sub r6, r6, r0  # /
 
-_noBex:
+_storeSize:
     lis r7, 0x8042
     stw r4, 0x1D84(r7) # \
     stw r5, 0x2254(r7) # | Write our menuInstance size patches
@@ -109,6 +105,13 @@ _createHeap:
     bctrl # create/[gfMemoryPool]
     
 _loadModule:
+    li r4,0x3c
+    lwz r3,-0x43e8(r13)
+    lis r12, 0x8002
+    ori r12, r12, 0x6c78
+    mtctr r12
+    bctrl # setTemporaryLoadHeap
+
     addi r3, r1, 0x8
     lwz r4, -0x43e8(r13) # ModuleManager
     addi r5, r31, 0x18
@@ -120,6 +123,9 @@ _loadModule:
     mtctr r12
     bctrl # loadModuleRequest
 
-    addi r1, r1, 0x20
-    lwz r0, 0x14(r1) # original instruction
+    lmw r3, 0x20(r1)
+    lwz r0, 0xa4(r1)
+    mtlr r0
+    addi r1, r1, 0xa0
+    lwz r0, 0xe4(r31) # original instruction
 }
