@@ -1,6 +1,6 @@
 # Syriinge 💉
 
-Syringe is a framework and API for injecting C++ code into Super Smash Bros. Brawl at runtime via plugin loading. Plugins are built into Nintendo Relocatable Module (.rel) files and loaded by Syriinge. Syriinge itself is loaded via gecko codes, which can be found in `Syringe.asm` and is a standard GCTRM assembly file.
+Syriinge is a framework and API for injecting C++ code into Super Smash Bros. Brawl at runtime via plugin loading. Plugins are built into Nintendo Relocatable Module (.rel) files and loaded by Syriinge. Syriinge itself is loaded via gecko codes, which can be found in `Syringe.asm` and is a standard GCTRM assembly file.
 
 ## Build Requirements
 
@@ -27,7 +27,7 @@ Following these steps will produce a `.rel` file to place on your SD card inside
 
 ## Usage
 
-Syringe on it's own does not do anything meaningful. Syringe simply provides an API for hooking and injecting C++ code into the game at runtime. You'll need to download or create plugins to add custom functionality to your game. To see example plugins, refer to [this](https://github.com/Sammi-Husky/BrawlPlugins) repository.
+Syriinge on it's own does not do anything meaningful. Syriinge simply provides an API for hooking and injecting C++ code into the game at runtime. You'll need to download or create plugins to add custom functionality to your game. To see example plugins, refer to [this](https://github.com/Sammi-Husky/BrawlPlugins) repository.
 
 For creating your own plugins, you may find the [Template Repository]() helpful.
 
