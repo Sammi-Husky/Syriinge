@@ -23,7 +23,7 @@ Following these steps will produce a `.rel` file to place on your SD card inside
 - Download or build the project
 - Add `sy_core.rel` to your mod/modpack's `module` folder
 - Copy `Syringe.asm` to your build's source files and `.include` it at the top of `RSBE01.txt`
-- Download or create plugins and add them to a folder called `plugins` inside your `/module` folder. (create this directory if it doesn't exist)
+- Download or create plugins and add them to a folder called `plugins` inside your `/pf` folder. (create this directory if it doesn't exist)
 
 ## Usage
 
