@@ -1,8 +1,9 @@
-#include "sy_core.h"
-#include "sy_utils.h"
 #include <OS/OSCache.h>
 #include <OS/OSError.h>
 #include <vector.h>
+
+#include "sy_core.h"
+#include "sy_utils.h"
 
 namespace SyringeCore {
     Vector<InjectionAbs*> Injections;
@@ -59,11 +60,16 @@ namespace SyringeCore {
             // needs the original instruction
             if (inject->type == INJECT_TYPE_INLINE)
             {
-                inject->originalInstr = *(u32*)targetAddr;
+                InlineHook* tmp = (InlineHook*)inject;
+                tmp->originalInstr = *(u32*)targetAddr;
 
-                u32 hookAddr = (u32)&inject->originalInstr;
+                u32 hookAddr = (u32)&tmp->originalInstr;
                 *(u32*)targetAddr = SyringeUtils::EncodeBranch(targetAddr, hookAddr);
                 OSReport("[syCore] Hooked: %x -> %x\n", targetAddr, hookAddr);
+
+                // encode hook with branch back to injection point
+                u32 returnBranch = (u32)&tmp->instructions[9];
+                tmp->instructions[9] = SyringeUtils::EncodeBranch(returnBranch, (targetAddr + 4));
             }
             else if (inject->type == INJECT_TYPE_REPLACE)
             {
@@ -93,7 +99,7 @@ namespace SyringeCore {
         ModuleLoadEvent::Subscribe(static_cast<ModuleLoadCB>(onModuleLoaded));
     }
 
-    void syInlineHook(const u32 address, const void* replacement, int moduleId)
+    void _inlineHook(const u32 address, const void* replacement, int moduleId)
     {
         // set up our trampoline for calling original
         InlineHook* hook = new InlineHook();
@@ -124,23 +130,25 @@ namespace SyringeCore {
 
         ICInvalidateRange((void*)address, 0x04);
     }
-
+    void syInlineHook(const u32 address, const void* replacement)
+    {
+        _inlineHook(address, replacement, -1);
+    }
     void syInlineHookRel(const u32 offset, const void* replacement, int moduleId)
     {
-        syInlineHook(offset, replacement, moduleId);
+        _inlineHook(offset, replacement, moduleId);
     }
 
-    void sySimpleHook(const u32 address, const void* replacement, int moduleId)
+    void sySimpleHook(const u32 address, const void* replacement)
     {
-        syReplaceFunc(address, replacement, NULL, moduleId);
+        _replaceFunc(address, replacement, NULL, -1);
     }
-
     void sySimpleHookRel(const u32 offset, const void* replacement, int moduleId)
     {
-        sySimpleHook(offset, replacement, moduleId);
+        _replaceFunc(offset, replacement, NULL, moduleId);
     }
 
-    void syReplaceFunc(const u32 address, const void* replacement, void** original, int moduleId)
+    void _replaceFunc(const u32 address, const void* replacement, void** original, int moduleId)
     {
         Hook* hook = new Hook();
         hook->type = INJECT_TYPE_REPLACE;
@@ -180,10 +188,13 @@ namespace SyringeCore {
 
         Injections.push(hook);
     }
-
+    void syReplaceFunc(const u32 address, const void* replacement, void** original)
+    {
+        _replaceFunc(address, replacement, original, -1);
+    }
     void syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId)
     {
-        syReplaceFunc(offset, replacement, original, moduleId);
+        _replaceFunc(offset, replacement, original, moduleId);
     }
 
 } // namespace SyringeCore
