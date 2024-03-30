@@ -29,7 +29,7 @@ Following these steps will produce a `.rel` file to place on your SD card inside
 
 Syriinge on it's own does not do anything meaningful. Syriinge simply provides an API for hooking and injecting C++ code into the game at runtime. You'll need to download or create plugins to add custom functionality to your game. To see example plugins, refer to [this](https://github.com/Sammi-Husky/BrawlPlugins) repository.
 
-For creating your own plugins, you may find the [Template Repository]() helpful.
+For creating your own plugins, you may find the [Template Repository](https://github.com/Sammi-Husky/SyriingePluginTemplate) helpful.
 
 ## Credits
 
