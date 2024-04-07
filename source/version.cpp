@@ -5,7 +5,7 @@
 namespace Syringe {
     Version::Version(const char* versionStr)
     {
-        sscanf(versionStr, "%d.%d.%d", this->major, this->minor, this->revision);
+        sscanf(versionStr, "%d.%d.%d", &this->major, &this->minor, &this->revision);
     }
     bool operator<(const Version& lh, const Version& rh)
     {

@@ -23,7 +23,7 @@ namespace Syringe {
         this->module = gfModule::create(heapAddr, buffer, size);
 
         // call prolog function
-        this->metadata = ((PluginMeta * (*)()) module->header->prologOffset)();
+        this->metadata = ((PluginMeta * (*)()) this->module->header->prologOffset)();
 
         if (this->metadata->SY_VERSION != Version(SYRINGE_VERSION))
         {
