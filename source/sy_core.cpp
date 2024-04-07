@@ -1,12 +1,16 @@
 #include <OS/OSCache.h>
 #include <OS/OSError.h>
+#include <fa/fa.h>
+#include <printf.h>
 #include <vector.h>
 
+#include "plugin.h"
 #include "sy_core.h"
 #include "sy_utils.h"
 
 namespace SyringeCore {
     Vector<InjectionAbs*> Injections;
+    // Vector<Syringe::Plugin*> Plugins;
 
     namespace ModuleLoadEvent {
         Vector<ModuleLoadCB> Callbacks;
@@ -101,6 +105,8 @@ namespace SyringeCore {
 
     void _inlineHook(const u32 address, const void* replacement, int moduleId)
     {
+        OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)replacement);
+
         // set up our trampoline for calling original
         InlineHook* hook = new InlineHook();
         hook->type = INJECT_TYPE_INLINE;
@@ -150,6 +156,7 @@ namespace SyringeCore {
 
     void _replaceFunc(const u32 address, const void* replacement, void** original, int moduleId)
     {
+        OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)replacement);
         Hook* hook = new Hook();
         hook->type = INJECT_TYPE_REPLACE;
         hook->moduleId = moduleId;
@@ -197,4 +204,39 @@ namespace SyringeCore {
         _replaceFunc(offset, replacement, original, moduleId);
     }
 
+    void _faLoadPlugin(FAEntryInfo* info, const char* folder)
+    {
+        char tmp[0x80];
+        if (info->name[0] == 0)
+            sprintf(tmp, "%s/%s", folder, info->shortname);
+        else
+            sprintf(tmp, "%s/%s", folder, info->name);
+
+        // Syringe::Plugin* plg = new (Heaps::Syringe) Syringe::Plugin(tmp);
+        Syringe::Plugin plg = Syringe::Plugin(tmp);
+
+        if (!plg.loadPlugin())
+            OSReport("[Syringe] Failed to load plugin (%s)\n", tmp);
+
+                // Plugins.push(plg);
+    }
+    int syLoadPlugins(const char* folder)
+    {
+        FAEntryInfo info;
+        int count = 0;
+        char tmp[0x80];
+        sprintf(tmp, "%spf/%s/*.rel", MOD_PATCH_DIR, folder);
+        if (FAFsfirst(tmp, 0x20, &info) == 0)
+        {
+            _faLoadPlugin(&info, folder);
+            count++;
+
+            while (FAFsnext(&info) == 0)
+            {
+                _faLoadPlugin(&info, folder);
+                count++;
+            }
+        }
+        return count;
+    }
 } // namespace SyringeCore
