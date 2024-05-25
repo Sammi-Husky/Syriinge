@@ -69,8 +69,7 @@ namespace SyringeCore {
 
                 u32 hookAddr = (u32)&tmp->originalInstr;
                 *(u32*)targetAddr = SyringeUtils::EncodeBranch(targetAddr, hookAddr);
-                OSReport("[syCore] Hooked: %x -> %x\n", targetAddr, hookAddr);
-
+                OSReport("[Syringe] Patching %8x -> %8x\n", targetAddr, hookAddr);
                 // encode hook with branch back to injection point
                 u32 returnBranch = (u32)&tmp->instructions[9];
                 tmp->instructions[9] = SyringeUtils::EncodeBranch(returnBranch, (targetAddr + 4));
@@ -88,7 +87,7 @@ namespace SyringeCore {
 
                 u32 branchAddr = (u32)&asHook->branch;
                 *(u32*)targetAddr = SyringeUtils::EncodeBranch(targetAddr, branchAddr);
-                OSReport("[syCore] Hooked: %x -> %x\n", targetAddr, branchAddr);
+                OSReport("[Syringe] Patching %8x -> %8x\n", targetAddr, branchAddr);
             }
             ICInvalidateRange((void*)targetAddr, 0x04);
         }
@@ -105,8 +104,6 @@ namespace SyringeCore {
 
     void _inlineHook(const u32 address, const void* replacement, int moduleId)
     {
-        OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)replacement);
-
         // set up our trampoline for calling original
         InlineHook* hook = new InlineHook();
         hook->type = INJECT_TYPE_INLINE;
@@ -116,6 +113,7 @@ namespace SyringeCore {
         // no need to patch immediately if target is inside a rel
         if (moduleId == -1)
         {
+            OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)replacement);
             hook->originalInstr = *(u32*)address;
 
             // patch target func with hook
@@ -156,7 +154,6 @@ namespace SyringeCore {
 
     void _replaceFunc(const u32 address, const void* replacement, void** original, int moduleId)
     {
-        OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)replacement);
         Hook* hook = new Hook();
         hook->type = INJECT_TYPE_REPLACE;
         hook->moduleId = moduleId;
@@ -189,6 +186,7 @@ namespace SyringeCore {
         if (moduleId == -1)
         {
             // patch target func with hook
+            OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)replacement);
             *(u32*)address = SyringeUtils::EncodeBranch(address, hookBranch);
             ICInvalidateRange((void*)address, 0x04);
         }
@@ -218,7 +216,7 @@ namespace SyringeCore {
         if (!plg.loadPlugin())
             OSReport("[Syringe] Failed to load plugin (%s)\n", tmp);
 
-                // Plugins.push(plg);
+        // Plugins.push(plg);
     }
     int syLoadPlugins(const char* folder)
     {

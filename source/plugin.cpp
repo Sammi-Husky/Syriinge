@@ -11,6 +11,7 @@ namespace Syringe {
     {
         strncpy(this->path, path, sizeof(this->path));
     }
+
     gfModule* Plugin::loadPlugin()
     {
         gfFileIOHandle handle;
@@ -29,14 +30,10 @@ namespace Syringe {
         {
             versionToString(this->metadata->SY_VERSION, buff);
             OSReport("[Syringe] Version Mismatch! (wanted: %s, installed: %s)", buff, SYRINGE_VERSION);
+        }
 
-            delete this->module;
-        }
-        else
-        {
-            versionToString(this->metadata->VERSION, buff);
-            OSReport("[Syringe] Loaded plugin (%s, %s)\n", this->metadata->NAME, buff);
-        }
+        versionToString(this->metadata->VERSION, buff);
+        OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
 
         free(buffer);
         handle.release();
