@@ -1,0 +1,15 @@
+224,1,000001f4: InitNetwork__7SyringeFv
+224,1,0000031c: Subscribe__Q211SyringeCore15ModuleLoadEventFPFP12gfModuleInfo_v
+224,1,0000081c: syInlineHook__11SyringeCoreFUlPCv
+224,1,00000824: syInlineHookRel__11SyringeCoreFUlPCvi
+224,1,00000828: sySimpleHook__11SyringeCoreFUlPCv
+224,1,00000834: sySimpleHookRel__11SyringeCoreFUlPCvi
+224,1,00000940: syReplaceFunc__11SyringeCoreFUlPCvPPv
+224,1,00000948: syReplaceFuncRel__11SyringeCoreFUlPCvPPvi
+224,1,00000c28: EncodeBranch__12SyringeUtilsFUlUlb
+224,1,00000c54: EncodeBranch__12SyringeUtilsFUlUl
+224,1,00000c5c: __ct__Q27Syringe7VersionFPCc
+224,1,00000ca8: __lt__7SyringeFRCQ27Syringe7VersionRCQ27Syringe7Version
+224,1,00000cf8: __eq__7SyringeFRCQ27Syringe7VersionRCQ27Syringe7Version
+224,1,00000d38: __ne__7SyringeFRCQ27Syringe7VersionRCQ27Syringe7Version
+224,1,00000d78: versionToString__7SyringeFRCQ27Syringe7VersionPc
