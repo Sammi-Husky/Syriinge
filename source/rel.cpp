@@ -21,9 +21,10 @@ namespace Syringe {
 
     void InitNetwork()
     {
-        SOInitInfo info;
-        info.allocator = SOAlloc;
-        info.dealloc = SOFree;
+        SOInitInfo info = {
+            SOAlloc,
+            SOFree
+        };
         SOInit(&info);
         SOStartupEx(0x2bf20);
     }
@@ -50,6 +51,10 @@ namespace Syringe {
         int num = SyringeCore::syLoadPlugins("plugins");
 
         OSReport("[Syringe] Done. (plugins: %d)\n", num);
+
+        // try and apply rel hooks to modules which
+        // were already loaded before loading plugins
+        SyringeCore::applyRelHooks();
     }
 
     void _epilog()

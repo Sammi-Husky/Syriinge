@@ -36,7 +36,7 @@ namespace SyringeCore {
         }
     }
 
-    void onModuleLoaded(gfModuleInfo* info)
+    void doPatchesOnModule(gfModuleInfo* info)
     {
         gfModuleHeader* header = info->m_module->header;
 
@@ -90,6 +90,33 @@ namespace SyringeCore {
                 OSReport("[Syringe] Patching %8x -> %8x\n", targetAddr, branchAddr);
             }
             ICInvalidateRange((void*)targetAddr, 0x04);
+        }
+    }
+    void onModuleLoaded(gfModuleInfo* info)
+    {
+        doPatchesOnModule(info);
+    }
+    void applyRelHooks()
+    {
+        gfModuleManager* manager = gfModuleManager::getInstance();
+
+        int numInjections = Injections.size();
+
+        for (int i = 0; i < 16; i++)
+        {
+            gfModuleInfo tmp = manager->m_moduleInfos[i];
+            gfModuleInfo* info = NULL;
+
+            // is module loaded
+            if (tmp.m_flags >> 4 & 1)
+            {
+                info = &manager->m_moduleInfos[i];
+            }
+
+            if (info != NULL)
+            {
+                doPatchesOnModule(info);
+            }
         }
     }
 
