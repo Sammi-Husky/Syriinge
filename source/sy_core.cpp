@@ -100,15 +100,12 @@ namespace SyringeCore {
     {
         gfModuleManager* manager = gfModuleManager::getInstance();
 
-        int numInjections = Injections.size();
-
         for (int i = 0; i < 16; i++)
         {
-            gfModuleInfo tmp = manager->m_moduleInfos[i];
             gfModuleInfo* info = NULL;
 
             // is module loaded
-            if (tmp.m_flags >> 4 & 1)
+            if (manager->m_moduleInfos[i].m_flags >> 4 & 1)
             {
                 info = &manager->m_moduleInfos[i];
             }
@@ -122,10 +119,11 @@ namespace SyringeCore {
 
     void syInit()
     {
-        // Reload hooks every time a module is loaded
+        // Creates an event that's fired whenever a module is loaded
         SyringeCore::syInlineHook(0x80026db4, reinterpret_cast<void*>(ModuleLoadEvent::process));
         SyringeCore::syInlineHook(0x800272e0, reinterpret_cast<void*>(ModuleLoadEvent::process));
 
+        // subscribe to onModuleLoaded event to handle applying hooks
         ModuleLoadEvent::Subscribe(static_cast<ModuleLoadCB>(onModuleLoaded));
     }
 
@@ -137,7 +135,7 @@ namespace SyringeCore {
         hook->moduleId = moduleId;
         hook->tgtAddr = address;
 
-        // no need to patch immediately if target is inside a rel
+        // // no need to patch immediately if target is inside a rel
         if (moduleId == -1)
         {
             OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)replacement);

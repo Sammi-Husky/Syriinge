@@ -44,7 +44,8 @@ namespace Syringe {
         SyringeCore::syInit();
 
         // Initialize the socket systems
-        InitNetwork();
+        // THIS SLOWS DOWN CONSOLE BOOT BY 40 SECONDS
+        // InitNetwork();
 
         OSReport("[Syringe] Loading Plugins\n");
 
@@ -54,7 +55,7 @@ namespace Syringe {
 
         // try and apply rel hooks to modules which
         // were already loaded before loading plugins
-        SyringeCore::applyRelHooks();
+        // SyringeCore::applyRelHooks();
     }
 
     void _epilog()
