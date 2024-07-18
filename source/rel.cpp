@@ -1,9 +1,5 @@
 #include <OS/OSError.h>
-#include <fa/fa.h>
-#include <gf/gf_heap_manager.h>
-#include <gf/gf_module.h>
 #include <net/net.h>
-#include <printf.h>
 
 #include "sy_core.h"
 

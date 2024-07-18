@@ -82,7 +82,9 @@ namespace SyringeCore {
                 // patching the target with the hook branch
                 if (asHook->trampoline != NULL)
                 {
+                    u32 returnBranch = (u32)&asHook->trampoline->branch;
                     asHook->trampoline->originalInstr = *(u32*)targetAddr;
+                    asHook->trampoline->branch = SyringeUtils::EncodeBranch(returnBranch, (targetAddr + 4));
                 }
 
                 u32 branchAddr = (u32)&asHook->branch;
