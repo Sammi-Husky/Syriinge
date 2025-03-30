@@ -71,8 +71,8 @@ namespace SyringeCore {
                 *(u32*)targetAddr = SyringeUtils::EncodeBranch(targetAddr, hookAddr);
                 OSReport("[Syringe] Patching %8x -> %8x\n", targetAddr, hookAddr);
                 // encode hook with branch back to injection point
-                u32 returnBranch = (u32)&tmp->instructions[9];
-                tmp->instructions[9] = SyringeUtils::EncodeBranch(returnBranch, (targetAddr + 4));
+                u32 returnBranch = (u32)&tmp->instructions[11];
+                tmp->instructions[11] = SyringeUtils::EncodeBranch(returnBranch, (targetAddr + 4));
             }
             else if (inject->type == INJECT_TYPE_REPLACE)
             {
@@ -150,12 +150,12 @@ namespace SyringeCore {
 
         // encode hook with jump to our func
         u32 replAddr = reinterpret_cast<u32>(replacement);
-        u32 replBranchAddr = (u32)&hook->instructions[4];
-        hook->instructions[4] = SyringeUtils::EncodeBranch(replBranchAddr, replAddr, true);
+        u32 replBranchAddr = (u32)&hook->instructions[5];
+        hook->instructions[5] = SyringeUtils::EncodeBranch(replBranchAddr, replAddr, true);
 
         // encode hook with branch back to injection point
-        u32 returnBranch = (u32)&hook->instructions[9];
-        hook->instructions[9] = SyringeUtils::EncodeBranch(returnBranch, (address + 4));
+        u32 returnBranch = (u32)&hook->instructions[11];
+        hook->instructions[11] = SyringeUtils::EncodeBranch(returnBranch, (address + 4));
 
         Injections.push(hook);
 
