@@ -27,7 +27,7 @@ namespace Syringe {
         free(buffer);
         handle.release();
 
-        // bit of a hack, but we hijack the unresolved function to get the plugin metadata
+        // bit of a hack, but we hijack the prolog function to get the plugin metadata
         this->metadata = ((PluginMeta * (*)()) this->module->header->prologOffset)();
 
         char buff[10];
@@ -39,7 +39,8 @@ namespace Syringe {
             return NULL;
         }
 
-        // Now that we've confirmed the plugin is compatible, we can call the main function
+        // Now that we've confirmed the plugin is compatible, we can call
+        // the main function that was specified in the metadata
         this->metadata->PLUGIN_MAIN();
         versionToString(this->metadata->VERSION, buff);
         OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
