@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#define SYRINGE_VERSION "0.5.5"
+#define SYRINGE_VERSION "0.6.0"
 
 namespace Syringe {
     class Version {
