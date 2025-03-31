@@ -4,7 +4,6 @@
 #include "sy_core.h"
 
 namespace Syringe {
-
     extern "C" {
     typedef void (*PFN_voidfunc)();
     __attribute__((section(".ctors"))) extern PFN_voidfunc _ctors[];

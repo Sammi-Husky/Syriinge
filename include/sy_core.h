@@ -8,18 +8,19 @@
 
 extern "C" char MOD_PATCH_DIR[0x18];
 
+class CoreApi;
 namespace Syringe {
     struct PluginMeta {
         char NAME[20];
         char AUTHOR[20];
         Version VERSION;
         Version SY_VERSION;
-        void (*PLUGIN_MAIN)();
+        void (*PLUGIN_MAIN)(CoreApi* api);
     };
 } // namespace Syringe
 
 namespace SyringeCore {
-
+    extern CoreApi* API;
     enum INJECT_TYPE {
         INJECT_TYPE_INVALID = -1,
         INJECT_TYPE_REPLACE = 0,
@@ -99,6 +100,14 @@ namespace SyringeCore {
      * @param moduleId Optional. Only needed if this hook is inside a dynamically loaded module.
      */
     void _inlineHook(const u32 address, const void* replacement, int moduleId = -1);
+    void _replaceFunc(const u32 address, const void* replacement, void** original, int moduleId = -1);
+    int syLoadPlugins(const char* folder);
+
+    typedef void (*ModuleLoadCB)(gfModuleInfo*);
+}
+
+class CoreApi {
+public:
     /**
      * @brief Injects a hook at the target address.
      * @note Hooks injected via this function WILL automatically return execution to the original function.
@@ -106,7 +115,7 @@ namespace SyringeCore {
      * @param address address to inject our hook at
      * @param replacement pointer to the function to run
      */
-    void syInlineHook(const u32 address, const void* replacement);
+    virtual void syInlineHook(const u32 address, const void* replacement);
     /**
      * @brief Injects an inline hook into a dynamically loaded module on load.
      * @note Hooks injected via this function WILL automatically return execution to the original function.
@@ -115,7 +124,7 @@ namespace SyringeCore {
      * @param replacement pointer to the function to inject
      * @param moduleId ID of the target module
      */
-    void syInlineHookRel(const u32 offset, const void* replacement, int moduleId);
+    virtual void syInlineHookRel(const u32 offset, const void* replacement, int moduleId);
     /**
      * @brief Injects a simple hook at the target address.
      * @note Hooks injected through this function WILL NOT automatically branch back to the original after returning.
@@ -123,7 +132,7 @@ namespace SyringeCore {
      * @param address address to inject the hook at
      * @param replacement pointer to function the hook will point to
      */
-    void sySimpleHook(const u32 address, const void* replacement);
+    virtual void sySimpleHook(const u32 address, const void* replacement);
     /**
      * @brief Injects a simple hook into a dynamically loaded module on load.
      * @note Hooks injected through this function WILL NOT automatically branch back to the original after returning.
@@ -132,18 +141,7 @@ namespace SyringeCore {
      * @param replacement pointer to function the hook will point to
      * @param moduleId ID of the target module
      */
-    void sySimpleHookRel(const u32 offset, const void* replacement, int moduleId);
-    /**
-     * @brief Replaces the function at the target address with the function pointed to by "replacement".
-     * @note Replacement functions will not automatically call or return to the original function.
-     * To call the original function, use the parameter "original"
-     *
-     * @param address address of the function to replace
-     * @param replacement pointer to the replacement function
-     * @param original pointer to the original function. Useful for calling the original behavior.
-     * @param moduleId Optional. Only needed if this hook is inside a dynamically loaded module.
-     */
-    void _replaceFunc(const u32 address, const void* replacement, void** original, int moduleId = -1);
+    virtual void sySimpleHookRel(const u32 offset, const void* replacement, int moduleId);
     /**
      * @brief Replaces the function at the target address with the function pointed to by "replacement".
      * @note Replacement functions will not automatically call or return to the original function.
@@ -153,7 +151,7 @@ namespace SyringeCore {
      * @param replacement pointer to the replacement function
      * @param original pointer to the original function. Useful for calling the original behavior.
      */
-    void syReplaceFunc(const u32 address, const void* replacement, void** original);
+    virtual void syReplaceFunc(const u32 address, const void* replacement, void** original);
     /**
      * @brief Replaces a function inside of a dynamically loaded module on load.
      * @note Replacement functions will not automatically call or return to the original function.
@@ -164,16 +162,10 @@ namespace SyringeCore {
      * @param original pointer to the original function. Useful for calling the original behavior.
      * @param moduleId ID of the target module
      */
-    void syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId);
-
-    int syLoadPlugins(const char* folder);
-
-    typedef void (*ModuleLoadCB)(gfModuleInfo*);
+    virtual void syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId);
 
     /**
-     * @brief Event for when modules are loaded.
+     * @brief Registers a callback function that will be called whenever a module is loaded.
      */
-    namespace ModuleLoadEvent {
-        void Subscribe(ModuleLoadCB cb);
-    }
-}
+    virtual void moduleLoadEventSubscribe(SyringeCore::ModuleLoadCB cb);
+};

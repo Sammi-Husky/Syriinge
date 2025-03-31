@@ -7,6 +7,7 @@
 #include "string.h"
 
 namespace Syringe {
+    typedef PluginMeta* (*PluginPrologFN)(CoreApi*);
     Plugin::Plugin(const char* path)
     {
         strncpy(this->path, path, sizeof(this->path));
@@ -27,22 +28,19 @@ namespace Syringe {
         free(buffer);
         handle.release();
 
-        // bit of a hack, but we hijack the prolog function to get the plugin metadata
-        this->metadata = ((PluginMeta * (*)()) this->module->header->prologOffset)();
+        // Normally module prolog doesn't return anything, but in our case we stipulate
+        // that it returns a pointer to the plugin metadata struct and takes the API as an argument
+        PluginPrologFN prolog = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset);
+        this->metadata = prolog(SyringeCore::API);
 
         char buff[10];
         if (this->metadata->SY_VERSION != Version(SYRINGE_VERSION))
         {
-            versionToString(this->metadata->SY_VERSION, buff);
+            this->metadata->SY_VERSION.toString(this->metadata->SY_VERSION, buff);
             OSReport("[Syringe] Syringe version mismatch! (plugin: %s, core: %s)\n", buff, SYRINGE_VERSION);
-            unloadPlugin();
-            return NULL;
         }
 
-        // Now that we've confirmed the plugin is compatible, we can call
-        // the main function that was specified in the metadata
-        this->metadata->PLUGIN_MAIN();
-        versionToString(this->metadata->VERSION, buff);
+        this->metadata->VERSION.toString(this->metadata->VERSION, buff);
         OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
 
         this->enable = true;

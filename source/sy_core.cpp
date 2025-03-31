@@ -9,6 +9,7 @@
 #include "sy_utils.h"
 
 namespace SyringeCore {
+    CoreApi* API = NULL;
     Vector<InjectionAbs*> Injections;
     // Vector<Syringe::Plugin*> Plugins;
 
@@ -121,12 +122,14 @@ namespace SyringeCore {
 
     void syInit()
     {
+        CoreApi* api = new (Heaps::Syringe) CoreApi();
+        API = api;
         // Creates an event that's fired whenever a module is loaded
-        SyringeCore::syInlineHook(0x80026db4, reinterpret_cast<void*>(ModuleLoadEvent::process));
-        SyringeCore::syInlineHook(0x800272e0, reinterpret_cast<void*>(ModuleLoadEvent::process));
+        api->syInlineHook(0x80026db4, reinterpret_cast<void*>(ModuleLoadEvent::process));
+        api->syInlineHook(0x800272e0, reinterpret_cast<void*>(ModuleLoadEvent::process));
 
         // subscribe to onModuleLoaded event to handle applying hooks
-        ModuleLoadEvent::Subscribe(static_cast<ModuleLoadCB>(onModuleLoaded));
+        api->moduleLoadEventSubscribe(static_cast<ModuleLoadCB>(onModuleLoaded));
     }
 
     void _inlineHook(const u32 address, const void* replacement, int moduleId)
@@ -161,24 +164,6 @@ namespace SyringeCore {
 
         ICInvalidateRange((void*)address, 0x04);
     }
-    void syInlineHook(const u32 address, const void* replacement)
-    {
-        _inlineHook(address, replacement, -1);
-    }
-    void syInlineHookRel(const u32 offset, const void* replacement, int moduleId)
-    {
-        _inlineHook(offset, replacement, moduleId);
-    }
-
-    void sySimpleHook(const u32 address, const void* replacement)
-    {
-        _replaceFunc(address, replacement, NULL, -1);
-    }
-    void sySimpleHookRel(const u32 offset, const void* replacement, int moduleId)
-    {
-        _replaceFunc(offset, replacement, NULL, moduleId);
-    }
-
     void _replaceFunc(const u32 address, const void* replacement, void** original, int moduleId)
     {
         Hook* hook = new Hook();
@@ -220,15 +205,6 @@ namespace SyringeCore {
 
         Injections.push(hook);
     }
-    void syReplaceFunc(const u32 address, const void* replacement, void** original)
-    {
-        _replaceFunc(address, replacement, original, -1);
-    }
-    void syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId)
-    {
-        _replaceFunc(offset, replacement, original, moduleId);
-    }
-
     bool _faLoadPlugin(FAEntryInfo* info, const char* folder)
     {
         char tmp[0x80];
@@ -271,3 +247,32 @@ namespace SyringeCore {
         return count;
     }
 } // namespace SyringeCore
+
+void CoreApi::syInlineHook(const u32 address, const void* replacement)
+{
+    SyringeCore::_inlineHook(address, replacement, -1);
+}
+void CoreApi::syInlineHookRel(const u32 offset, const void* replacement, int moduleId)
+{
+    SyringeCore::_inlineHook(offset, replacement, moduleId);
+}
+void CoreApi::sySimpleHook(const u32 address, const void* replacement)
+{
+    SyringeCore::_replaceFunc(address, replacement, NULL, -1);
+}
+void CoreApi::sySimpleHookRel(const u32 offset, const void* replacement, int moduleId)
+{
+    SyringeCore::_replaceFunc(offset, replacement, NULL, moduleId);
+}
+void CoreApi::syReplaceFunc(const u32 address, const void* replacement, void** original)
+{
+    SyringeCore::_replaceFunc(address, replacement, original, -1);
+}
+void CoreApi::syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId)
+{
+    SyringeCore::_replaceFunc(offset, replacement, original, moduleId);
+}
+void CoreApi::moduleLoadEventSubscribe(SyringeCore::ModuleLoadCB cb)
+{
+    SyringeCore::ModuleLoadEvent::Subscribe(cb);
+}
