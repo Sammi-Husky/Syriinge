@@ -1,7 +1,7 @@
+#include <FA.h>
 #include <OS/OSCache.h>
 #include <OS/OSError.h>
-#include <fa/fa.h>
-#include <printf.h>
+#include <stdio.h>
 #include <vector.h>
 
 #include "plugin.h"
@@ -229,7 +229,7 @@ namespace SyringeCore {
         _replaceFunc(offset, replacement, original, moduleId);
     }
 
-    void _faLoadPlugin(FAEntryInfo* info, const char* folder)
+    bool _faLoadPlugin(FAEntryInfo* info, const char* folder)
     {
         char tmp[0x80];
         if (info->name[0] == 0)
@@ -241,9 +241,13 @@ namespace SyringeCore {
         Syringe::Plugin plg = Syringe::Plugin(tmp);
 
         if (!plg.loadPlugin())
+        {
             OSReport("[Syringe] Failed to load plugin (%s)\n", tmp);
+            return false;
+        }
 
         // Plugins.push(plg);
+        return true;
     }
     int syLoadPlugins(const char* folder)
     {
@@ -253,13 +257,15 @@ namespace SyringeCore {
         sprintf(tmp, "%spf/%s/*.rel", MOD_PATCH_DIR, folder);
         if (FAFsfirst(tmp, 0x20, &info) == 0)
         {
-            _faLoadPlugin(&info, folder);
-            count++;
+            // Load first found plugin
+            if (_faLoadPlugin(&info, folder))
+                count++;
 
+            // Loop over and load the rest if there are more
             while (FAFsnext(&info) == 0)
             {
-                _faLoadPlugin(&info, folder);
-                count++;
+                if (_faLoadPlugin(&info, folder))
+                    count++;
             }
         }
         return count;

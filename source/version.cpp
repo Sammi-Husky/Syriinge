@@ -1,6 +1,5 @@
 #include "version.h"
-#include <printf.h>
-#include <sscanf.h>
+#include <stdio.h>
 
 namespace Syringe {
     Version::Version(const char* versionStr)
@@ -26,7 +25,7 @@ namespace Syringe {
     }
     bool operator!=(const Version& lh, const Version& rh)
     {
-        return lh.major != rh.major && lh.minor != rh.minor && lh.revision != rh.revision;
+        return lh.major != rh.major || lh.minor != rh.minor || lh.revision != rh.revision;
     }
 
     void versionToString(const Version& version, char* buffer)

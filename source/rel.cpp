@@ -1,5 +1,5 @@
 #include <OS/OSError.h>
-#include <net/net.h>
+#include <SO/SOBasic.h>
 
 #include "sy_core.h"
 

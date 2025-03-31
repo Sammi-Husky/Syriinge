@@ -1,8 +1,6 @@
 #pragma once
 
 #include <gf/gf_module.h>
-#include <printf.h>
-#include <sscanf.h>
 #include <stddef.h>
 #include <types.h>
 
@@ -16,6 +14,7 @@ namespace Syringe {
         char AUTHOR[20];
         Version VERSION;
         Version SY_VERSION;
+        void (*PLUGIN_MAIN)();
     };
 } // namespace Syringe
 

@@ -19,27 +19,32 @@ namespace Syringe {
         void* buffer = handle.getBuffer();
         void* heapAddr = gfHeapManager::getHeap(Heaps::Syringe);
         size_t size = handle.getSize();
-        char buff[10];
 
+        // Create the gfModule object
         this->module = gfModule::create(heapAddr, buffer, size);
 
-        // call prolog function
-        this->metadata = ((PluginMeta * (*)()) this->module->header->prologOffset)();
-
-        if (this->metadata->SY_VERSION != Version(SYRINGE_VERSION))
-        {
-            versionToString(this->metadata->SY_VERSION, buff);
-            OSReport("[Syringe] Version Mismatch! (wanted: %s, installed: %s)", buff, SYRINGE_VERSION);
-        }
-
-        versionToString(this->metadata->VERSION, buff);
-        OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
-
+        // Free the buffer and release the handle
         free(buffer);
         handle.release();
 
-        this->enable = true;
+        // bit of a hack, but we hijack the unresolved function to get the plugin metadata
+        this->metadata = ((PluginMeta * (*)()) this->module->header->prologOffset)();
 
+        char buff[10];
+        if (this->metadata->SY_VERSION != Version(SYRINGE_VERSION))
+        {
+            versionToString(this->metadata->SY_VERSION, buff);
+            OSReport("[Syringe] Syringe version mismatch! (plugin: %s, core: %s)\n", buff, SYRINGE_VERSION);
+            unloadPlugin();
+            return NULL;
+        }
+
+        // Now that we've confirmed the plugin is compatible, we can call the main function
+        this->metadata->PLUGIN_MAIN();
+        versionToString(this->metadata->VERSION, buff);
+        OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
+
+        this->enable = true;
         return module;
     }
     void Plugin::unloadPlugin()
