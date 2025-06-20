@@ -28,6 +28,11 @@ namespace SyringeCore {
     };
 
     struct Trampoline {
+        Trampoline()
+        {
+            originalInstr = 0x60000000; // nop instruction
+            branch = 0;
+        }
         u32 originalInstr; // original instruction
         u32 branch;        // branch to original func code + 4
     };
@@ -47,7 +52,7 @@ namespace SyringeCore {
             type = INJECT_TYPE_INVALID;
             moduleId = -1;
             tgtAddr = -1;
-            originalInstr = -1;
+            originalInstr = 0x60000000; // nop instruction
         }
     };
 
