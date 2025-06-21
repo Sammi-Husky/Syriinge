@@ -37,6 +37,6 @@ Syriinge's goal is to empower developers with the tools they need to execute gra
 
     Find reference projects and samples to jumpstart your journey.
 
-    [:octicons-arrow-right-24: License](#)
+    [:octicons-arrow-right-24: Examples](Examples)
 
 </div>
