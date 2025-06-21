@@ -74,9 +74,9 @@ namespace SyringeCore {
             instructions[3] = 0x7C0802A6;  // mflr r0
             instructions[4] = 0x90010094;  // stw r0, 0x94(r1)
             instructions[5] = 0;           // <-- branch to hook
-            instructions[6] = 0x80010008;  // lwz r0, 0x8(r1)
+            instructions[6] = 0x80010094;  // lwz r0, 0x94(r1)
             instructions[7] = 0x7C0803A6;  // mtlr r0
-            instructions[8] = 0x80010094;  // lwz r0, 0x94(r1)
+            instructions[8] = 0x80010008;  // lwz r0, 0x8(r1)
             instructions[9] = 0xB861000C;  // lmw r3, 0xC(r1)
             instructions[10] = 0x38210090; // addi r1, r1, 0x90
             instructions[11] = 0;          // <--- branch back to original
