@@ -1,0 +1,79 @@
+site_name: "Syriinge Documentation"
+site_url: "https://syriinge.sammihusky.com"
+repo_url: https://github.com/Sammi-Husky/Syriinge
+repo_name: "Sammi-Husky/Syriinge"
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2023 - 2025 Sammi Husky
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Sammi-Husky/Syriinge
+theme:
+  name: "material"
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    logo: fontawesome/solid/syringe
+  palette:
+    scheme: "slate"
+    primary: "green"
+    accent: "green"
+  features:
+    - navigation.top
+    - navigation.indexes
+    - content.action.edit
+    - navigation.instant
+    - navigation.instant.progress
+markdown_extensions:
+  - attr_list
+  - md_in_html
+  - admonition
+  - tables
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - pymdownx.details
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - Quick Start Guide: getting-started/quick-start.md
+      - Tutorial: getting-started/tutorial.md
+  - API:
+      - API/index.md
+      - CoreAPI: API/CoreAPI.md
+      - PluginMeta: API/PluginMeta.md
+      - Hooks:
+          - syInlineHook: API/hooks/inline-hook.md
+          - syInlineHookRel: API/hooks/inline-hook-rel.md
+          - syReplaceFunc: API/hooks/replace-func.md
+          - syReplaceFuncRel: API/hooks/replace-func-rel.md
+          - sySimpleHook: API/hooks/simple-hook.md
+          - sySimpleHookRel: API/hooks/simple-hook-rel.md
+      - Events:
+          - ModuleLoadEvent: API/events/ModuleLoadEvent.md
+  - Hook Injection: "hooking.md"
+  - Patch Files: "patches.md"
+  - Event Handling: "event-handling.md"
+  - Examples:
+      - Inline Hooking: examples/inline-hook.md
+      - Replacing Functions: examples/replace-func.md
+      - Simple Hooks: examples/simple-hook.md
+      - Plugin Meta: examples/plugin-meta.md
+      - Event Handling: examples/event-handling.md
+      - Patching the Dol: examples/patching-the-dol.md
+      - Patching Rels: examples/patching-rels.md
+      - Patch Files: examples/patch-files.md
+  - Technical Documentation:
+      - Syriinge Overview: technical/syriinge-overview.md
+      - Plugin System: technical/plugin-system.md
+      - Hooking System: technical/hooking-system.md
+      - Patching System: technical/patching-system.md
+      - Syriinge Loader: technical/syriinge-loader.md
