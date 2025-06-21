@@ -1,10 +1,10 @@
-# syReplaceFunc
+# syReplaceFuncRel
 #### Signature
 ``` cpp
 virtual void syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId);
 ```
 
-#### Paramters
+#### Parameters
 
 | Parameter      | Type     | Description                                           |
 | ---------------| -------- | ----------------------------------------------------- |
@@ -20,7 +20,7 @@ virtual void syReplaceFuncRel(const u32 offset, const void* replacement, void** 
 
 ``` cpp
 
-void (*originalFunc)(void);
+int (*originalFunc)(void);
 int myFunc() {
     OSReport("Hello World\n");
     return originalFunc();

@@ -1,12 +1,16 @@
 # sySimpleHook
 !!! warning
-    Hooks registered with this function will not create a stack frame. You must be careful about register usage to avoid crashes.
+    Register context of the hooked function is not preserved with this method. Hooks will clobber the volatile registers.
+
+!!! warning
+    The overwritten instruction at `address` is not run or preserved.
+
 #### Signature
 ``` cpp
 virtual void sySimpleHook(const u32 address, const void* replacement);
 ```
 
-#### Paramters
+#### Parameters
 
 | Parameter      | Type     | Description                       |
 | ---------------| -------- | --------------------------------- |
@@ -14,17 +18,16 @@ virtual void sySimpleHook(const u32 address, const void* replacement);
 | `replacement`  | void*    | function pointer to the hook body |
 
 #### Description
-Injects a hook at the target address. Hooks injected via this method will ***NOT*** return execution to the original function and no stack frame is created.
+Injects a hook at the target address. Hooks injected via this method will ***NOT*** return execution to the original function by default. 
 
-This hook type is mostly used for raw asm functions.
+This hook type is commonly used for raw asm functions.
 
 #### Example Usage
 
 ``` cpp
 
 asm void myFunc() {
-    // We're using simple hook don't create a stack frame 
-    // otherwise it would overwrite the caller's frame
+    // Don't need a stack frame.
     nofralloc
 
     // Return 0

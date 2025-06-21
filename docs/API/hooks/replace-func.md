@@ -4,7 +4,7 @@
 virtual void syReplaceFunc(const u32 address, const void* replacement, void** original);
 ```
 
-#### Paramters
+#### Parameters
 
 | Parameter      | Type     | Description                                           |
 | ---------------| -------- | ----------------------------------------------------- |
@@ -13,15 +13,15 @@ virtual void syReplaceFunc(const u32 address, const void* replacement, void** or
 | `original`     | void**   | Pointer to a function pointer that will get set to the original unhooked function  |
 
 #### Description
-Injects a hook over the first instruction of a function. This effectively "replaces" that function with a call to our own. By default, the function execution will not return to the hook location but rather the original calling function.
+Injects a hook over the first instruction of a function. The `original` paramter will get set to a pointer to the unmodified original function. This is useful for calling the original behavior from within your replacement.
 
-The `original` function pointer paramter will get set to the original unmodified and unhooked function. This is useful for calling the original behavior from within your replacement.
+Retuning from your replacement will return to the function caller, not the replaced function.
 
 #### Example Usage
 
 ``` cpp
 
-void (*originalFunc)(void);
+int (*originalFunc)(void);
 int myFunc() {
     OSReport("Hello World\n");
     return originalFunc();

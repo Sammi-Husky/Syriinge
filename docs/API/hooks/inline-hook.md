@@ -4,7 +4,7 @@
 virtual void syInlineHook(const u32 address, const void* replacement);
 ```
 
-#### Paramters
+#### Parameters
 
 | Parameter      | Type     | Description                       |
 | ---------------| -------- | --------------------------------- |
@@ -12,12 +12,15 @@ virtual void syInlineHook(const u32 address, const void* replacement);
 | `replacement`  | void*    | function pointer to the hook body |
 
 #### Description
-Injects a hook at the target address. Hooks injected via this method ***WILL*** return execution to the original function.
+Injects a hook at the target address. 
+
+- Hooks injected via this method ***WILL*** return execution to the original function. 
+- Register values prior to branching to your code are restored when returning. 
+- These hooks will run the overwritten instruction at `address` prior to jumping to your code.
 
 #### Example Usage
 
 ``` cpp
-
 void sayHello() {
     OSReport("Hello World!\n");
 }

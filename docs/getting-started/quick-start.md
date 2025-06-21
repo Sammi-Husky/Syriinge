@@ -1,11 +1,11 @@
-# Quick Start Guide
+# **Quick Start Guide**
 This guide will get you familiar with the basic plumbing and steps required to get a bare-bones plugin written and loaded into the game as quickly as possible.
 
 For the purposes of this guide, we are going to assume that you know the basics of managing a brawl build / modpack, and are familiar with how to add codes to your GCT.
 
 ---
 
-## Installing the runtime
+## **Installing the runtime**
 1.  Download a release build from the Project Repository, making sure to choose a "USER" zip. 
     - Alternatively, you can also [build from source](#)
 2.  Mount your dolphin virtual SD, or insert your physical SD into your PC.
@@ -16,7 +16,7 @@ For the purposes of this guide, we are going to assume that you know the basics 
 
 ---
 
-## Setting up the project
+## **Setting up the project**
 #### Required Components
  - DevKitPro
  - git
@@ -39,10 +39,10 @@ If you followed the above steps and have the required components installed (and 
 
 ---
 
-## Anatomy of a Plugin 
+## **Anatomy of a Plugin**
 Now that we've got a solid boilerplate to base our plugin on, lets dive into each file and explain what they do.
 
-### Makefile
+### **Makefile**
 To anyone versed in C/C++ development, Makefiles are an infamous if uniquitous part of your life. For the uninitiated, this file is responsible for holding the instructions for building your project. 
 
 It compiles and links your code, and in our case uses `elf2rel` on it to generated a plugin file. There are also several configuration options contained in this file:
@@ -54,17 +54,17 @@ It compiles and links your code, and in our case uses `elf2rel` on it to generat
  - **SOURCES** 
     - list of directories containing source files to be compiled.
 
-### EXTRA.lst
+### **EXTRA.lst**
 Part of the build process for making `.rel` plugins is to partially link the compiled objects. This results in a great number of unresolved references. 
 
 Thankfully, we can pass this partially linked binary into a tool called `elf2rel` along with a supplied mapping file (`.lst`) that maps symbols to addresses. 
 
 `elf2rel` will use this map to resolve as many unresolved references as possible, and then convert the elf file into a `.rel` that is loadable by Syriinge.
 
-### rel.lcf
+### **rel.lcf**
 This is the MWCC equivalent of the linkerscript. There is some metrowerks specific syntax going on here, but thankfully this doesn't need to be edited for 90% of usecases so we won't go into detail here.
 
-### rel.cpp
+### **rel.cpp**
 This is the main entrypoint to the plugin. This file contains three functions:
  
  - _prolog
@@ -84,7 +84,7 @@ This function is what is any remaining unresolved references that were not resol
 
 ---
 
-## Further Reading
+## **Further Reading**
 You should now have a good understanding of the boilerplate that is provided to you by the [Template Repository](https://github.com/Sammi-Husky/SyriingePluginTemplate). 
 
 The next step is to build a simple "Hello World" application which you can follow our basic [Tutorial Guide](tutorial.md) to do.

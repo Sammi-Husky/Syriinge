@@ -59,18 +59,15 @@ nav:
           - sySimpleHookRel: API/hooks/simple-hook-rel.md
       - Events:
           - ModuleLoadEvent: API/events/ModuleLoadEvent.md
-  - Hook Injection: "hooking.md"
+  - Guides:
+      - Inline Hooking: guides/inline-hook.md
+      - Replacing Functions: guides/replace-func.md
+      - Simple Hooks: guides/simple-hook.md
+      - Plugin Meta: guides/plugin-meta.md
+      - Event Handling: guides/event-handling.md
+      - Writing to Memory: guides/writing-to-memory.md
+      - Patch Files: guides/patch-files.md
   - Patch Files: "patches.md"
-  - Event Handling: "event-handling.md"
-  - Examples:
-      - Inline Hooking: examples/inline-hook.md
-      - Replacing Functions: examples/replace-func.md
-      - Simple Hooks: examples/simple-hook.md
-      - Plugin Meta: examples/plugin-meta.md
-      - Event Handling: examples/event-handling.md
-      - Patching the Dol: examples/patching-the-dol.md
-      - Patching Rels: examples/patching-rels.md
-      - Patch Files: examples/patch-files.md
   - Technical Documentation:
       - Syriinge Overview: technical/syriinge-overview.md
       - Plugin System: technical/plugin-system.md

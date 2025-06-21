@@ -1,10 +1,10 @@
-# PluginMeta
-## Overview
+# **PluginMeta**
+## **Overview**
 Every plugin must define a `PluginMeta` structure. This structure is used to define the plugin version, the runtime version it was built for, the plugin author, etc.
 
 The `_prolog` function should return a reference to this instance.
 
-## Definition
+## **Definition**
 ``` cpp
 struct PluginMeta {
     char NAME[20];
@@ -14,7 +14,7 @@ struct PluginMeta {
 };
 ```
 
-## Example Usage
+## **Example Usage**
 In following example, you can see two uses of the `Version` type that Syriinge provides. This type takes a string of the format `major.minor.rev`. 
 
 The type has operator functions for comparing two instances against eachother.

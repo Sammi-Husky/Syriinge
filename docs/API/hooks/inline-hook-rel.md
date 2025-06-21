@@ -1,10 +1,10 @@
-# syInlineHook
+# syInlineHookRel
 #### Signature
 ``` cpp
 virtual void syInlineHookRel(const u32 offset, const void* replacement, int moduleId);
 ```
 
-#### Paramters
+#### Parameters
 
 | Parameter      | Type     | Description                       |
 | ---------------| -------- | --------------------------------- |

@@ -1,12 +1,16 @@
-# sySimpleHook
+# sySimpleHookRel
 !!! warning
-    Hooks registered with this function will not create a stack frame. You must be careful about register usage to avoid crashes.
+    Register context of the hooked function is not preserved with this method. Hooks will clobber the volatile registers.
+
+!!! warning
+    The overwritten instruction at `address` is not run or preserved.
+
 #### Signature
 ``` cpp
 virtual void sySimpleHookRel(const u32 offset, const void* replacement, int moduleId);
 ```
 
-#### Paramters
+#### Parameters
 
 | Parameter      | Type     | Description                       |
 | ---------------| -------- | --------------------------------- |
@@ -22,8 +26,7 @@ virtual void sySimpleHookRel(const u32 offset, const void* replacement, int modu
 ``` cpp
 
 asm void myFunc() {
-    // We're using simple hook don't create a stack frame 
-    // otherwise it would overwrite the caller's frame
+    // Don't need a stack frame.
     nofralloc
 
     // Return 0
