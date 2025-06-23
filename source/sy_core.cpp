@@ -1,6 +1,7 @@
 #include <FA.h>
 #include <OS/OSCache.h>
 #include <OS/OSError.h>
+#include <gf/gf_module.h>
 #include <stdio.h>
 #include <vector.h>
 
@@ -10,7 +11,7 @@
 
 namespace SyringeCore {
     CoreApi* API = NULL;
-    Vector<InjectionAbs*> Injections;
+    Vector<Hook*> Injections;
     // Vector<Syringe::Plugin*> Plugins;
 
     namespace ModuleLoadEvent {
@@ -37,7 +38,7 @@ namespace SyringeCore {
         }
     }
 
-    void doPatchesOnModule(gfModuleInfo* info)
+    void hookModule(gfModuleInfo* info)
     {
         gfModuleHeader* header = info->m_module->header;
 
@@ -46,7 +47,7 @@ namespace SyringeCore {
 
         for (int i = 0; i < numInjections; i++)
         {
-            InjectionAbs* inject = Injections[i];
+            Hook* inject = Injections[i];
             if (inject->moduleId != header->id)
             {
                 continue;
@@ -56,156 +57,58 @@ namespace SyringeCore {
 
             // if this is a module hook, add offset to .text addr
             if (targetAddr < 0x80000000)
-            {
                 targetAddr += textAddr;
-            }
 
-            // sets original instruction now that module has been loaded into memory.
-            // This differs for replacements because only the trampline back
-            // needs the original instruction
-            if (inject->type == INJECT_TYPE_INLINE)
+            if (inject->options & OPT_DIRECT)
             {
-                InlineHook* tmp = (InlineHook*)inject;
-                tmp->originalInstr = *(u32*)targetAddr;
-
-                u32 hookAddr = (u32)&tmp->originalInstr;
-                *(u32*)targetAddr = SyringeUtils::EncodeBranch(targetAddr, hookAddr);
-                OSReport("[Syringe] Patching %8x -> %8x\n", targetAddr, hookAddr);
-                // encode hook with branch back to injection point
-                u32 returnBranch = (u32)&tmp->instructions[11];
-                tmp->instructions[11] = SyringeUtils::EncodeBranch(returnBranch, (targetAddr + 4));
+                OSReport("[Syringe] Patching %8x -> %8x\n", targetAddr, inject->newAddr);
             }
-            else if (inject->type == INJECT_TYPE_REPLACE)
+            else
             {
-                Hook* asHook = (Hook*)inject;
-
-                // it's important we refresh this before
-                // patching the target with the hook branch
-                if (asHook->trampoline != NULL)
-                {
-                    u32 returnBranch = (u32)&asHook->trampoline->branch;
-                    asHook->trampoline->originalInstr = *(u32*)targetAddr;
-                    asHook->trampoline->branch = SyringeUtils::EncodeBranch(returnBranch, (targetAddr + 4));
-                }
-
-                u32 branchAddr = (u32)&asHook->branch;
-                *(u32*)targetAddr = SyringeUtils::EncodeBranch(targetAddr, branchAddr);
-                OSReport("[Syringe] Patching %8x -> %8x\n", targetAddr, branchAddr);
+                OSReport("[Syringe] Patching %8x -> %8x\n", targetAddr, (u32)&inject->instructions[0]);
             }
-            ICInvalidateRange((void*)targetAddr, 0x04);
+
+            inject->apply(targetAddr);
         }
     }
     void onModuleLoaded(gfModuleInfo* info)
     {
-        doPatchesOnModule(info);
+        hookModule(info);
     }
-    void applyRelHooks()
-    {
-        gfModuleManager* manager = gfModuleManager::getInstance();
 
-        for (int i = 0; i < 16; i++)
-        {
-            gfModuleInfo* info = NULL;
+    // void hookLoadedModules()
+    // {
+    //     gfModuleManager* manager = gfModuleManager::getInstance();
 
-            // is module loaded
-            if (manager->m_moduleInfos[i].m_flags >> 4 & 1)
-            {
-                info = &manager->m_moduleInfos[i];
-            }
+    //     for (int i = 0; i < 16; i++)
+    //     {
+    //         gfModuleInfo* info = NULL;
 
-            if (info != NULL)
-            {
-                doPatchesOnModule(info);
-            }
-        }
-    }
+    //         // is module loaded
+    //         if (manager->m_moduleInfos[i].m_flags >> 4 & 1)
+    //         {
+    //             info = &manager->m_moduleInfos[i];
+    //         }
+
+    //         if (info != NULL)
+    //         {
+    //             hookModule(info);
+    //         }
+    //     }
+    // }
 
     void syInit()
     {
-        CoreApi* api = new (Heaps::Syringe) CoreApi();
-        API = api;
+        API = new (Heaps::Syringe) CoreApi();
         // Creates an event that's fired whenever a module is loaded
-        api->syInlineHook(0x80026db4, reinterpret_cast<void*>(ModuleLoadEvent::process));
-        api->syInlineHook(0x800272e0, reinterpret_cast<void*>(ModuleLoadEvent::process));
+        API->syInlineHook(0x80026db4, reinterpret_cast<void*>(ModuleLoadEvent::process));
+        API->syInlineHook(0x800272e0, reinterpret_cast<void*>(ModuleLoadEvent::process));
 
         // subscribe to onModuleLoaded event to handle applying hooks
-        api->moduleLoadEventSubscribe(static_cast<ModuleLoadCB>(onModuleLoaded));
+        API->moduleLoadEventSubscribe(static_cast<ModuleLoadCB>(onModuleLoaded));
     }
 
-    void _inlineHook(const u32 address, const void* replacement, int moduleId)
-    {
-        // set up our trampoline for calling original
-        InlineHook* hook = new InlineHook();
-        hook->type = INJECT_TYPE_INLINE;
-        hook->moduleId = moduleId;
-        hook->tgtAddr = address;
-
-        // // no need to patch immediately if target is inside a rel
-        if (moduleId == -1)
-        {
-            OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)replacement);
-            hook->originalInstr = *(u32*)address;
-
-            // patch target func with hook
-            u32 hookAddr = (u32)&hook->originalInstr;
-            *(u32*)address = SyringeUtils::EncodeBranch(address, hookAddr);
-        }
-
-        // encode hook with jump to our func
-        u32 replAddr = reinterpret_cast<u32>(replacement);
-        u32 replBranchAddr = (u32)&hook->instructions[5];
-        hook->instructions[5] = SyringeUtils::EncodeBranch(replBranchAddr, replAddr, true);
-
-        // encode hook with branch back to injection point
-        u32 returnBranch = (u32)&hook->instructions[11];
-        hook->instructions[11] = SyringeUtils::EncodeBranch(returnBranch, (address + 4));
-
-        Injections.push(hook);
-
-        ICInvalidateRange((void*)address, 0x04);
-    }
-    void _replaceFunc(const u32 address, const void* replacement, void** original, int moduleId)
-    {
-        Hook* hook = new Hook();
-        hook->type = INJECT_TYPE_REPLACE;
-        hook->moduleId = moduleId;
-        hook->tgtAddr = address;
-
-        if (original != NULL)
-        {
-            // encode our trampoline branch
-            // back to original func
-            Trampoline* tramp = new Trampoline();
-
-            // only read immediately if patch is inside a rel
-            if (moduleId == -1)
-            {
-                tramp->originalInstr = *(u32*)address;
-            }
-
-            u32 trampBranch = (u32)&tramp->branch;
-            tramp->branch = SyringeUtils::EncodeBranch(trampBranch, address + 4);
-
-            *original = tramp;
-            hook->trampoline = tramp;
-        }
-
-        u32 replAddr = reinterpret_cast<u32>(replacement);
-        u32 hookBranch = (u32)&hook->branch;
-        hook->branch = SyringeUtils::EncodeBranch(hookBranch, replAddr);
-
-        // no need to patch immediately if target is inside a rel
-        if (moduleId == -1)
-        {
-            // patch target func with hook
-            OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)replacement);
-            *(u32*)address = SyringeUtils::EncodeBranch(address, hookBranch);
-            ICInvalidateRange((void*)address, 0x04);
-        }
-
-        Injections.push(hook);
-    }
-    bool _faLoadPlugin(FAEntryInfo* info, const char* folder)
+    bool faLoadPlugin(FAEntryInfo* info, const char* folder)
     {
         char tmp[0x80];
         if (info->name[0] == 0)
@@ -216,7 +119,7 @@ namespace SyringeCore {
         // Syringe::Plugin* plg = new (Heaps::Syringe) Syringe::Plugin(tmp);
         Syringe::Plugin plg = Syringe::Plugin(tmp);
 
-        if (!plg.loadPlugin())
+        if (!plg.loadPlugin(API))
         {
             OSReport("[Syringe] Failed to load plugin (%s)\n", tmp);
             return false;
@@ -234,13 +137,13 @@ namespace SyringeCore {
         if (FAFsfirst(tmp, 0x20, &info) == 0)
         {
             // Load first found plugin
-            if (_faLoadPlugin(&info, folder))
+            if (faLoadPlugin(&info, folder))
                 count++;
 
             // Loop over and load the rest if there are more
             while (FAFsnext(&info) == 0)
             {
-                if (_faLoadPlugin(&info, folder))
+                if (faLoadPlugin(&info, folder))
                     count++;
             }
         }
@@ -248,31 +151,158 @@ namespace SyringeCore {
     }
 } // namespace SyringeCore
 
+void CoreApi::syCustomHook(const u32 address, const void* replacement, int options, int moduleId)
+{
+    Hook* hook = new (Heaps::Syringe) Hook(address,
+                                           reinterpret_cast<u32>(replacement),
+                                           moduleId,
+                                           options);
+
+    if (hook->type == HOOK_STATIC)
+    {
+        hook->apply(address);
+        OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)replacement);
+    }
+
+    SyringeCore::Injections.push(hook);
+}
 void CoreApi::syInlineHook(const u32 address, const void* replacement)
 {
-    SyringeCore::_inlineHook(address, replacement, -1);
+    CoreApi::syInlineHookRel(address, replacement, -1);
 }
 void CoreApi::syInlineHookRel(const u32 offset, const void* replacement, int moduleId)
 {
-    SyringeCore::_inlineHook(offset, replacement, moduleId);
+    Hook* hook = new (Heaps::Syringe) Hook(offset,
+                                           reinterpret_cast<u32>(replacement),
+                                           moduleId,
+                                           OPT_SAVE_REGS | OPT_ORIG_PRE);
+
+    if (hook->type == HOOK_STATIC)
+    {
+        hook->apply(offset);
+        OSReport("[Syringe] Patching %8x -> %8x\n", offset, (u32)replacement);
+    }
+
+    SyringeCore::Injections.push(hook);
 }
 void CoreApi::sySimpleHook(const u32 address, const void* replacement)
 {
-    SyringeCore::_replaceFunc(address, replacement, NULL, -1);
+    CoreApi::syReplaceFunc(address, replacement, NULL);
 }
 void CoreApi::sySimpleHookRel(const u32 offset, const void* replacement, int moduleId)
 {
-    SyringeCore::_replaceFunc(offset, replacement, NULL, moduleId);
+    CoreApi::syReplaceFuncRel(offset, replacement, NULL, moduleId);
 }
 void CoreApi::syReplaceFunc(const u32 address, const void* replacement, void** original)
 {
-    SyringeCore::_replaceFunc(address, replacement, original, -1);
+    CoreApi::syReplaceFuncRel(address, replacement, original, -1);
 }
 void CoreApi::syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId)
 {
-    SyringeCore::_replaceFunc(offset, replacement, original, moduleId);
+    Hook* hook = new (Heaps::Syringe) Hook(offset,
+                                           reinterpret_cast<u32>(replacement),
+                                           moduleId,
+                                           OPT_DIRECT);
+
+    if (hook->type == HOOK_STATIC)
+    {
+        OSReport("[Syringe] Patching %8x -> %8x\n", offset, (u32)replacement);
+        hook->apply(offset);
+    }
+
+    SyringeCore::Injections.push(hook);
+    *original = &hook->trampoline;
 }
 void CoreApi::moduleLoadEventSubscribe(SyringeCore::ModuleLoadCB cb)
 {
     SyringeCore::ModuleLoadEvent::Subscribe(cb);
+}
+
+Hook::Hook(u32 source, u32 dest, s8 moduleId, int opts) : trampoline(Trampoline(0x60000000, 0)),
+                                                          tgtAddr(source),
+                                                          newAddr(dest),
+                                                          options((HookOptions)opts),
+                                                          moduleId(moduleId),
+                                                          originalInstr(0x60000000)
+{
+    type = moduleId == -1 ? HOOK_STATIC : HOOK_RELATIVE; // determine hook type based on moduleId
+
+    for (int i = 0; i < sizeof(instructions) / sizeof(u32); i++)
+    {
+        instructions[i] = 0x60000000; // initialize all instructions to NOP
+    }
+}
+void Hook::setInstructions(u32 targetAddr, HookOptions opts)
+{
+    // original instruction or nop (ORIG_INSTR_PRE)
+    if (opts & OPT_ORIG_PRE)
+        instructions[0] = originalInstr;
+
+    if (opts & OPT_SAVE_REGS)
+    {
+        instructions[1] = 0x9421FF70; // stwu r1, -0x90(r1)
+        instructions[2] = 0x90010008; // stw r0, 0x8(r1)
+        instructions[3] = 0xBC61000C; // stmw r3, 0xC(r1)
+        instructions[4] = 0x7C0802A6; // mflr r0
+        instructions[5] = 0x90010094; // stw r0, 0x94(r1)
+        instructions[6] = SyringeUtils::EncodeBranch((u32)&instructions[6], newAddr, true);
+        instructions[7] = 0x80010094;  // lwz r0, 0x94(r1)
+        instructions[8] = 0x7C0803A6;  // mtlr r0
+        instructions[9] = 0x80010008;  // lwz r0, 0x8(r1)
+        instructions[10] = 0xB861000C; // lmw r3, 0xC(r1)
+        instructions[11] = 0x38210090; // addi r1, r1, 0x90
+    }
+    else
+    {
+        instructions[1] = 0x9421FFF0; // stwu r1, -0x10(r1)
+        instructions[2] = 0x7C0802A6; // mflr r0
+        instructions[3] = 0x90010014; // stw r0, 0x14(r1)
+        instructions[4] = SyringeUtils::EncodeBranch((u32)&instructions[6], newAddr, true);
+        instructions[5] = 0x80010014; // lwz r0, 0x14(r1)
+        instructions[6] = 0x7C0803A6; // mtlr r0
+        instructions[7] = 0x38210010; // addi r1, r1, 0x10
+    }
+
+    // original instruction or nop (ORIG_INSTR_POST)
+    if (opts & OPT_ORIG_POST)
+        instructions[12] = originalInstr;
+
+    // By default, we branch to the original function
+    instructions[13] = SyringeUtils::EncodeBranch((u32)&instructions[13], targetAddr + 4);
+
+    // If OPT_NO_RETURN is set, we branch to the link register instead
+    if (opts & OPT_NO_RETURN)
+    {
+        instructions[13] = 0x4E800020; // blr
+    }
+}
+void Hook::apply(u32 address)
+{
+    // get original instruction
+    originalInstr = *(u32*)address;
+
+    // Update the trampoline
+    trampoline.originalInstr = originalInstr;
+    trampoline.branch = SyringeUtils::EncodeBranch((u32)&trampoline.branch, address + 4);
+
+    // Set the instructions for the hook
+    this->setInstructions(address, options);
+
+    if (options & OPT_DIRECT)
+    {
+        // If OPT_DIRECT is set, we directly branch to the new address
+        *(u32*)address = SyringeUtils::EncodeBranch(address, newAddr);
+    }
+    else
+    {
+        // Otherwise, we patch the target address with a branch to our hook instructions
+        *(u32*)address = SyringeUtils::EncodeBranch(address, (u32)&instructions[0]);
+    }
+
+    // invalidate instruction cache for the target address
+    ICInvalidateRange((void*)address, 0x04);
+}
+Trampoline::Trampoline(u32 originalInstr, u32 retAddr) : originalInstr(originalInstr)
+{
+    branch = SyringeUtils::EncodeBranch((u32)&branch, retAddr);
 }

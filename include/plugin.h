@@ -14,7 +14,7 @@ namespace Syringe {
 
     public:
         Plugin(const char* path);
-        gfModule* loadPlugin();
+        gfModule* loadPlugin(CoreApi* api);
         void unloadPlugin();
         bool isEnabled() { return enable; }
         // plgParam* getParam(const char* name);

@@ -1,94 +1,62 @@
 #pragma once
 
-#include <gf/gf_module.h>
-#include <stddef.h>
-#include <types.h>
-
 #include "version.h"
 
 extern "C" char MOD_PATCH_DIR[0x18];
 
-class CoreApi;
+class gfModuleInfo;
 namespace Syringe {
     struct PluginMeta {
         char NAME[20];
         char AUTHOR[20];
         Version VERSION;
         Version SY_VERSION;
-        void (*PLUGIN_MAIN)(CoreApi* api);
     };
 } // namespace Syringe
 
+enum HookType {
+    HOOK_STATIC,
+    HOOK_RELATIVE
+};
+
+enum HookOptions {
+    OPT_NONE = 0x0,      // no options
+    OPT_SAVE_REGS = 0x1, // use safe hook
+    OPT_ORIG_PRE = 0x2,  // run the original instruction before hook
+    OPT_ORIG_POST = 0x4, // run the original instruction after the hook
+    OPT_NO_RETURN = 0x8, // do not return to hooked function
+    OPT_DIRECT = 0x10    // use direct branch instead of wrapping in a trampoline
+};
+
+struct Trampoline {
+    Trampoline(u32 originalInstr, u32 retAddr);
+    u32 originalInstr; // original instruction
+    u32 branch;        // branch to original func code + 4
+};
+
+class Hook {
+public:
+    HookType type;         // type of hook (static or relative)
+    HookOptions options;   // hook options
+    s8 moduleId;           // module ID this hook belongs to
+    u32 tgtAddr;           // target address to hook
+    u32 newAddr;           // address to branch to
+    u32 instructions[14];  // hook instructions
+    u32 originalInstr;     // original instruction at target address
+    Trampoline trampoline; // trampoline to facilitate calling original function
+
+    Hook(u32 source, u32 dest, s8 moduleId, int options);
+    void apply(u32 address);
+
+private:
+    void setInstructions(u32 targetAddr, HookOptions opts);
+};
+
 namespace SyringeCore {
-    extern CoreApi* API;
-    enum INJECT_TYPE {
-        INJECT_TYPE_INVALID = -1,
-        INJECT_TYPE_REPLACE = 0,
-        INJECT_TYPE_INLINE = 1
-    };
-
-    struct Trampoline {
-        Trampoline()
-        {
-            originalInstr = 0x60000000; // nop instruction
-            branch = 0;
-        }
-        u32 originalInstr; // original instruction
-        u32 branch;        // branch to original func code + 4
-    };
-
-    /**
-     * @brief Abstract class all other injections inherit from
-     */
-    class InjectionAbs {
-    public:
-        INJECT_TYPE type;
-        char moduleId;
-        u32 tgtAddr;
-        u32 originalInstr;
-
-        InjectionAbs()
-        {
-            type = INJECT_TYPE_INVALID;
-            moduleId = -1;
-            tgtAddr = -1;
-            originalInstr = 0x60000000; // nop instruction
-        }
-    };
-
-    class Hook : public InjectionAbs {
-    public:
-        u32 branch;             // branch to our hook / replacement
-        Trampoline* trampoline; // trampline to facilitate calling original function
-    };
-
-    class InlineHook : public InjectionAbs {
-    public:
-        InlineHook()
-        {
-            // Create a stack frame, a branch to our code, and a branch back
-
-            instructions[0] = 0x9421FF70;  // stwu r1, -0x90(r1)
-            instructions[1] = 0x90010008;  // stw r0, 0x8(r1)
-            instructions[2] = 0xBC61000C;  // stmw r3, 0xC(r1)
-            instructions[3] = 0x7C0802A6;  // mflr r0
-            instructions[4] = 0x90010094;  // stw r0, 0x94(r1)
-            instructions[5] = 0;           // <-- branch to hook
-            instructions[6] = 0x80010094;  // lwz r0, 0x94(r1)
-            instructions[7] = 0x7C0803A6;  // mtlr r0
-            instructions[8] = 0x80010008;  // lwz r0, 0x8(r1)
-            instructions[9] = 0xB861000C;  // lmw r3, 0xC(r1)
-            instructions[10] = 0x38210090; // addi r1, r1, 0x90
-            instructions[11] = 0;          // <--- branch back to original
-        }
-        u32 instructions[12];
-    };
-
     /**
      * @brief Iterates over all loaded modules and attempts to apply registered hooks
-     *
      */
-    void applyRelHooks();
+    // void hookLoadedModules();
 
     /**
      * @brief Initializes the Syringe core systems.
@@ -97,20 +65,14 @@ namespace SyringeCore {
     void syInit();
 
     /**
-     * @brief Injects a hook at the target address.
-     * @note Hooks injected via this function WILL automatically return execution to the original function.
-     *
-     * @param address address to inject our hook at
-     * @param replacement pointer to the function to run
-     * @param moduleId Optional. Only needed if this hook is inside a dynamically loaded module.
+     * @brief Loads plugins from the specified folder.
+     * @param folder The folder to load plugins from.
+     * @return The number of plugins loaded.
      */
-    void _inlineHook(const u32 address, const void* replacement, int moduleId = -1);
-    void _replaceFunc(const u32 address, const void* replacement, void** original, int moduleId = -1);
     int syLoadPlugins(const char* folder);
 
     typedef void (*ModuleLoadCB)(gfModuleInfo*);
 }
-
 class CoreApi {
 public:
     /**
@@ -168,6 +130,20 @@ public:
      * @param moduleId ID of the target module
      */
     virtual void syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId);
+
+    /**
+     *  @brief Registers an advanced hook at the target address.
+     *  @note Advanced hooks allow for more complex behavior, such as whether to return to the original function,
+     *  whether to run the original instruction, and whether to use a direct branch.
+     *
+     *  @param address address to inject the hook at
+     *  @param replacement pointer to the function to run
+     *  @param moduleId ID of the target module
+     *  @param options options for the hook
+     */
+    virtual void syCustomHook(const u32 address, const void* replacement,
+                              int options = 0,
+                              int moduleId = -1);
 
     /**
      * @brief Registers a callback function that will be called whenever a module is loaded.

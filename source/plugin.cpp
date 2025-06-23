@@ -13,7 +13,7 @@ namespace Syringe {
         strncpy(this->path, path, sizeof(this->path));
     }
 
-    gfModule* Plugin::loadPlugin()
+    gfModule* Plugin::loadPlugin(CoreApi* api)
     {
         gfFileIOHandle handle;
         handle.read(this->path, Heaps::MenuInstance, 0);
@@ -31,7 +31,7 @@ namespace Syringe {
         // Normally module prolog doesn't return anything, but in our case we stipulate
         // that it returns a pointer to the plugin metadata struct and takes the API as an argument
         PluginPrologFN prolog = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset);
-        this->metadata = prolog(SyringeCore::API);
+        this->metadata = prolog(api);
 
         char buff[10];
         if (this->metadata->SY_VERSION != Version(SYRINGE_VERSION))
