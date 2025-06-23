@@ -2,6 +2,13 @@
 
 Syriinge is a framework and API for injecting C++ code into Super Smash Bros. Brawl at runtime via plugin loading. Plugins are built into Nintendo Relocatable Module (.rel) files and loaded by Syriinge. Syriinge itself is loaded via gecko codes, which can be found in `Syringe.asm` and is a standard GCTRM assembly file.
 
+## Documentation
+You can always find the latest docs at [https://syriinge.sammihusky.com](https://syriinge.sammihusky.com) 
+
+Documentation is built using [Material MkDocs](https://squidfunk.github.io/mkdocs-material/). You can find the markdown files used to generated the live documentation in the `/docs` folder. 
+
+Contributions here are always needed.
+
 ## Build Requirements
 
 In order to build the project, the user should satisfy the following requirements:
@@ -40,6 +47,8 @@ This project makes use of the work of several other open-source projects:
 - [BrawlHeaders](https://github.com/Sammi-Husky/BrawlHeaders), an open source collaborative repository for Brawl header files
 
 - [elf2rel](https://github.com/Sammi-Husky/elf2rel), a utility for converting `.elf` files to `.rel` files while linking them against a symbol map.
+
+- [Material MkDocs](https://squidfunk.github.io/mkdocs-material/), a popular documentation site generator.
 
 ## License
 
