@@ -50,7 +50,7 @@ namespace Syringe {
 
         // try and apply rel hooks to modules which
         // were already loaded before loading plugins
-        // SyringeCore::applyRelHooks();
+        // SyringeCore::hookLoadedModules();
     }
 
     void _epilog()
