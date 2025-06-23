@@ -1,4 +1,7 @@
 # Welcome to Syriinge
+!!! info "Don't Mind the Mess"
+    This site is currently under active developement. Some content may be innacurate or missing.
+
 Syriinge is a framework and API for injecting C++ code into Super Smash Bros. Brawl at runtime via plugins.
 
 Syriinge's goal is to empower developers with the tools they need to execute grand and intricate coding projects without resorting to hand writing assembly by letting developers use C/C++ to write their mods.
@@ -31,7 +34,7 @@ Syriinge's goal is to empower developers with the tools they need to execute gra
 
     [:octicons-arrow-right-24: Technical Explanation](#)
 
--   :fontawesome-regular-file:{ .lg .middle } __Examples and Templates__
+-   :fontawesome-regular-file:{ .lg .middle } __Guides and Examples__
 
     ---
 
