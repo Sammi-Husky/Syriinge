@@ -13,7 +13,7 @@ virtual void syReplaceFunc(const u32 address, const void* replacement, void** or
 | `original`     | void**   | Pointer to a function pointer that will get set to the original unhooked function  |
 
 #### Description
-Injects a hook over the first instruction of a function. The `original` paramter will get set to a pointer to the unmodified original function. This is useful for calling the original behavior from within your replacement.
+Injects a hook over the first instruction of a function. The `original` parameter will get set to a pointer to the unmodified original function. This is useful for calling the original behavior from within your replacement.
 
 Retuning from your replacement will return to the function caller, not the replaced function.
 
