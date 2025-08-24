@@ -2,6 +2,8 @@
 
 #include "version.h"
 
+#define DEPRECATE __attribute__((deprecated))
+
 extern "C" char MOD_PATCH_DIR[0x18];
 
 class gfModuleInfo;
@@ -73,80 +75,3 @@ namespace SyringeCore {
 
     typedef void (*ModuleLoadCB)(gfModuleInfo*);
 }
-class CoreApi {
-public:
-    /**
-     * @brief Injects a hook at the target address.
-     * @note Hooks injected via this function WILL automatically return execution to the original function.
-     *
-     * @param address address to inject our hook at
-     * @param replacement pointer to the function to run
-     */
-    virtual void syInlineHook(const u32 address, const void* replacement);
-    /**
-     * @brief Injects an inline hook into a dynamically loaded module on load.
-     * @note Hooks injected via this function WILL automatically return execution to the original function.
-     *
-     * @param offset offset inside the module's .text section to insert the hook
-     * @param replacement pointer to the function to inject
-     * @param moduleId ID of the target module
-     */
-    virtual void syInlineHookRel(const u32 offset, const void* replacement, int moduleId);
-    /**
-     * @brief Injects a simple hook at the target address.
-     * @note Hooks injected through this function WILL NOT automatically branch back to the original after returning.
-     *
-     * @param address address to inject the hook at
-     * @param replacement pointer to function the hook will point to
-     */
-    virtual void sySimpleHook(const u32 address, const void* replacement);
-    /**
-     * @brief Injects a simple hook into a dynamically loaded module on load.
-     * @note Hooks injected through this function WILL NOT automatically branch back to the original after returning.
-     *
-     * @param offset offset inside the module's .text section to insert the hook
-     * @param replacement pointer to function the hook will point to
-     * @param moduleId ID of the target module
-     */
-    virtual void sySimpleHookRel(const u32 offset, const void* replacement, int moduleId);
-    /**
-     * @brief Replaces the function at the target address with the function pointed to by "replacement".
-     * @note Replacement functions will not automatically call or return to the original function.
-     * To call the original function, use the parameter "original"
-     *
-     * @param address address of the function to replace
-     * @param replacement pointer to the replacement function
-     * @param original pointer to the original function. Useful for calling the original behavior.
-     */
-    virtual void syReplaceFunc(const u32 address, const void* replacement, void** original);
-    /**
-     * @brief Replaces a function inside of a dynamically loaded module on load.
-     * @note Replacement functions will not automatically call or return to the original function.
-     * To call the original function, use the parameter "original"
-     *
-     * @param offset offset inside the module's .text section of the function to replace
-     * @param replacement pointer to the replacement function
-     * @param original pointer to the original function. Useful for calling the original behavior.
-     * @param moduleId ID of the target module
-     */
-    virtual void syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId);
-
-    /**
-     *  @brief Registers an advanced hook at the target address.
-     *  @note Advanced hooks allow for more complex behavior, such as whether to return to the original function,
-     *  whether to run the original instruction, and whether to use a direct branch.
-     *
-     *  @param address address to inject the hook at
-     *  @param replacement pointer to the function to run
-     *  @param moduleId ID of the target module
-     *  @param options options for the hook
-     */
-    virtual void syCustomHook(const u32 address, const void* replacement,
-                              int options = 0,
-                              int moduleId = -1);
-
-    /**
-     * @brief Registers a callback function that will be called whenever a module is loaded.
-     */
-    virtual void moduleLoadEventSubscribe(SyringeCore::ModuleLoadCB cb);
-};
