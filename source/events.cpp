@@ -6,35 +6,28 @@
 #include <vector.h>
 
 namespace SyringeCore {
-    namespace Events {
+    // TODO maybe split events into their own files?
+    // This would reduce confusion around callback vectors
+    Vector<ModuleLoadCB> ModuleLoadEvent::callbacks;
 
-        // Forward declarations
-        void ModuleLoadedEvent();
+    void ModuleLoadEvent::init(CoreApi* api)
+    {
+        api->syHookEx(0x80026db4, reinterpret_cast<void*>(ModuleLoadEvent::process), OPT_SAVE_REGS | OPT_ORIG_PRE);
+        api->syHookEx(0x800272e0, reinterpret_cast<void*>(ModuleLoadEvent::process), OPT_SAVE_REGS | OPT_ORIG_PRE);
+    }
 
-        void initializeEvents(CoreApi* API)
-        {
-            API->syHookEx(0x80026db4, reinterpret_cast<void*>(ModuleLoadedEvent), OPT_SAVE_REGS | OPT_ORIG_PRE);
-            API->syHookEx(0x800272e0, reinterpret_cast<void*>(ModuleLoadedEvent), OPT_SAVE_REGS | OPT_ORIG_PRE);
+    void ModuleLoadEvent::process()
+    {
+        register gfModuleInfo* info;
+
+        asm {
+            mr info, r30
         }
 
-        void ModuleLoadedEvent()
+        int numCB = callbacks.size();
+        for (int i = 0; i < numCB; i++)
         {
-            register gfModuleInfo* info;
-            Events::EventData e;
-
-            asm {
-                mr info, r30
-            }
-
-            e.argument = info;
-            e.eventType = Events::MODULE_LOADED;
-
-            int num = subscribers.size();
-            for (int i = 0; i < num; i++)
-            {
-                if (subscribers[i].eventType == Events::MODULE_LOADED)
-                    subscribers[i].callback(&e);
-            }
+            ModuleLoadEvent::callbacks[i](info);
         }
     }
 }

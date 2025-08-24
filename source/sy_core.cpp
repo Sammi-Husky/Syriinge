@@ -14,10 +14,8 @@ namespace SyringeCore {
     CoreApi* API = NULL;
     Vector<Hook*> Injections;
 
-    void onModuleLoaded(Events::EventData* e)
+    void hookModule(gfModuleInfo* info)
     {
-        gfModuleInfo* info = static_cast<gfModuleInfo*>(e->argument);
-
         gfModuleHeader* header = info->m_module->header;
 
         u32 textAddr = header->getTextSectionAddr();
@@ -49,16 +47,18 @@ namespace SyringeCore {
             inject->apply(targetAddr);
         }
     }
+    void onModuleLoaded(gfModuleInfo* info)
+    {
+        hookModule(info);
+    }
 
     void syInit()
     {
         API = new (Heaps::Syringe) CoreApi();
 
-        // Initialize event system
-        Events::initializeEvents(API);
-
-        // Subscribe to the onModuleLoaded event to handle hooking rels
-        API->onModuleLoaded.subscribe(onModuleLoaded);
+        // subscribe to onModuleLoaded event to handle applying hooks
+        ModuleLoadEvent::init(API);
+        ModuleLoadEvent::subscribe(onModuleLoaded);
     }
 
     bool faLoadPlugin(FAEntryInfo* info, const char* folder)
