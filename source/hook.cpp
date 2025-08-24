@@ -1,5 +1,7 @@
+#include <OS/OSCache.h>
+
 #include "hook.h"
-#include <types.h>
+#include "sy_utils.h"
 
 namespace SyringeCore {
 

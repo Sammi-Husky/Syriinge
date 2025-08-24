@@ -1,13 +1,11 @@
 #pragma once
 
+#include "events.h"
 #include <types.h>
 
 #define DEPRECATE __attribute__((deprecated))
 
 namespace SyringeCore {
-
-    class gfModuleInfo;
-    
     class CoreApi {
     public:
         /**
@@ -83,10 +81,5 @@ namespace SyringeCore {
          * @param moduleId ID of the target module
          */
         DEPRECATE virtual void syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId);
-
-        /**
-         * @brief Registers a callback function that will be called whenever a module is loaded.
-         */
-        virtual void moduleLoadEventSubscribe(ModuleLoadCB cb);
     };
 }

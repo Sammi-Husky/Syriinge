@@ -7,13 +7,13 @@
 #include "string.h"
 
 namespace Syringe {
-    typedef PluginMeta* (*PluginPrologFN)(CoreApi*);
+    typedef PluginMeta* (*PluginPrologFN)(SyringeCore::CoreApi*);
     Plugin::Plugin(const char* path)
     {
         strncpy(this->path, path, sizeof(this->path));
     }
 
-    gfModule* Plugin::loadPlugin(CoreApi* api)
+    gfModule* Plugin::loadPlugin(SyringeCore::CoreApi* api)
     {
         gfFileIOHandle handle;
         handle.read(this->path, Heaps::MenuInstance, 0);

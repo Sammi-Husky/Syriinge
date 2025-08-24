@@ -3,6 +3,9 @@
 #include "sy_core.h"
 #include <gf/gf_module.h>
 
+namespace SyringeCore {
+    class CoreApi;
+}
 namespace Syringe {
     class Plugin {
     private:
@@ -14,7 +17,7 @@ namespace Syringe {
 
     public:
         Plugin(const char* path);
-        gfModule* loadPlugin(CoreApi* api);
+        gfModule* loadPlugin(SyringeCore::CoreApi* api);
         void unloadPlugin();
         bool isEnabled() { return enable; }
         // plgParam* getParam(const char* name);

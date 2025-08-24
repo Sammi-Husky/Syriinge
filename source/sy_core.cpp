@@ -1,43 +1,18 @@
 #include <FA.h>
-#include <OS/OSCache.h>
 #include <OS/OSError.h>
+
 #include <gf/gf_module.h>
 #include <stdio.h>
 #include <vector.h>
 
 #include "coreapi.h"
+#include "hook.h"
 #include "plugin.h"
 #include "sy_core.h"
-#include "sy_utils.h"
 
 namespace SyringeCore {
-    static CoreApi* API = NULL;
-    static Vector<Hook*> Injections;
-    // Vector<Syringe::Plugin*> Plugins;
-    
-    namespace ModuleLoadEvent {
-        
-        Vector<ModuleLoadCB> Callbacks;
-        void Subscribe(ModuleLoadCB cb)
-        {
-            Callbacks.push(cb);
-        }
-
-        void process()
-        {
-            register gfModuleInfo* info;
-
-            asm {
-                mr info, r30
-            }
-
-            int numCB = Callbacks.size();
-            for (int i = 0; i < numCB; i++)
-            {
-                Callbacks[i](info);
-            }
-        }
-    }
+    CoreApi* API = NULL;
+    Vector<Hook*> Injections;
 
     void hookModule(gfModuleInfo* info)
     {
@@ -77,36 +52,13 @@ namespace SyringeCore {
         hookModule(info);
     }
 
-    // void hookLoadedModules()
-    // {
-    //     gfModuleManager* manager = gfModuleManager::getInstance();
-
-    //     for (int i = 0; i < 16; i++)
-    //     {
-    //         gfModuleInfo* info = NULL;
-
-    //         // is module loaded
-    //         if (manager->m_moduleInfos[i].m_flags >> 4 & 1)
-    //         {
-    //             info = &manager->m_moduleInfos[i];
-    //         }
-
-    //         if (info != NULL)
-    //         {
-    //             hookModule(info);
-    //         }
-    //     }
-    // }
-
     void syInit()
     {
         API = new (Heaps::Syringe) CoreApi();
-        // Creates an event that's fired whenever a module is loaded
-        API->syHookEx(0x80026db4, reinterpret_cast<void*>(ModuleLoadEvent::process), OPT_SAVE_REGS | OPT_ORIG_PRE);
-        API->syHookEx(0x800272e0, reinterpret_cast<void*>(ModuleLoadEvent::process), OPT_SAVE_REGS | OPT_ORIG_PRE);
 
         // subscribe to onModuleLoaded event to handle applying hooks
-        API->moduleLoadEventSubscribe(static_cast<ModuleLoadCB>(onModuleLoaded));
+        ModuleLoadEvent::init(API);
+        ModuleLoadEvent::subscribe(onModuleLoaded);
     }
 
     bool faLoadPlugin(FAEntryInfo* info, const char* folder)
@@ -117,7 +69,6 @@ namespace SyringeCore {
         else
             sprintf(tmp, "%s/%s", folder, info->name);
 
-        // Syringe::Plugin* plg = new (Heaps::Syringe) Syringe::Plugin(tmp);
         Syringe::Plugin plg = Syringe::Plugin(tmp);
 
         if (!plg.loadPlugin(API))
@@ -126,7 +77,6 @@ namespace SyringeCore {
             return false;
         }
 
-        // Plugins.push(plg);
         return true;
     }
     int syLoadPlugins(const char* folder)

@@ -3,6 +3,7 @@
 #include <vector.h>
 
 #include "coreapi.h"
+#include "events.h"
 #include "hook.h"
 
 namespace SyringeCore {
@@ -21,7 +22,7 @@ namespace SyringeCore {
             OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)function);
         }
 
-        SyringeCore::Injections.push(hook);
+        Injections.push(hook);
 
         return reinterpret_cast<void**>(&hook->trampoline);
     }
@@ -53,9 +54,5 @@ namespace SyringeCore {
     void CoreApi::syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId)
     {
         original = syHookEx(offset, replacement, OPT_DIRECT, moduleId);
-    }
-    void CoreApi::moduleLoadEventSubscribe(ModuleLoadCB cb)
-    {
-        SyringeCore::ModuleLoadEvent::Subscribe(cb);
     }
 }
