@@ -8,6 +8,7 @@
 namespace SyringeCore {
     class CoreApi {
     public:
+        ModuleLoadEvent onModuleLoaded;
         /**
          * @brief Injects a hook at the target address.
          * @note Hooks injected via this function WILL automatically return execution to the original function.

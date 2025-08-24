@@ -56,9 +56,10 @@ namespace SyringeCore {
     {
         API = new (Heaps::Syringe) CoreApi();
 
+        EventDispatcher::initializeEvents(API);
+
         // subscribe to onModuleLoaded event to handle applying hooks
-        ModuleLoadEvent::init(API);
-        ModuleLoadEvent::subscribe(onModuleLoaded);
+        API->onModuleLoaded.subscribe(onModuleLoaded);
     }
 
     bool faLoadPlugin(FAEntryInfo* info, const char* folder)
