@@ -5,35 +5,30 @@
 #include <stdio.h>
 #include <vector.h>
 
-#include "coreapi.h"
-#include "hook.h"
-#include "plugin.h"
-#include "sy_core.h"
+#include "coreapi.hpp"
+#include "hook.hpp"
+#include "plugin.hpp"
+#include "sy_core.hpp"
 
 namespace SyringeCore {
     CoreApi* API = NULL;
     Vector<Hook*> Injections;
 
-    void hookModule(gfModuleInfo* info)
+    void onModuleLoaded(gfModuleInfo* info)
     {
         gfModuleHeader* header = info->m_module->header;
 
-        u32 textAddr = header->getTextSectionAddr();
-        int numInjections = Injections.size();
-
-        for (int i = 0; i < numInjections; i++)
+        for (int i = 0; i < Injections.size(); i++)
         {
             Hook* inject = Injections[i];
             if (inject->moduleId != header->id)
-            {
                 continue;
-            }
 
             u32 targetAddr = inject->tgtAddr;
 
             // if this is a module hook, add offset to .text addr
             if (targetAddr < 0x80000000)
-                targetAddr += textAddr;
+                targetAddr += header->getTextSectionAddr();
 
             if (inject->options & OPT_DIRECT)
             {
@@ -46,10 +41,6 @@ namespace SyringeCore {
 
             inject->apply(targetAddr);
         }
-    }
-    void onModuleLoaded(gfModuleInfo* info)
-    {
-        hookModule(info);
     }
 
     void syInit()
@@ -65,11 +56,11 @@ namespace SyringeCore {
     bool faLoadPlugin(FAEntryInfo* info, const char* folder)
     {
         char tmp[0x80];
-        if (info->name[0] == 0)
-            sprintf(tmp, "%s/%s", folder, info->shortname);
-        else
-            sprintf(tmp, "%s/%s", folder, info->name);
+        char* name = info->name[0] == 0 ? info->shortname : info->name;
+        sprintf(tmp, "%s/%s", folder, name);
 
+        // TODO: Once we start tracking loaded plugins we
+        // need to change this from stack to heap allocation
         Syringe::Plugin plg = Syringe::Plugin(tmp);
 
         if (!plg.loadPlugin(API))

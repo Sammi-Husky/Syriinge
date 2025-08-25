@@ -1,6 +1,6 @@
 #pragma once
 
-#include "version.h"
+#include "version.hpp"
 
 #define DEPRECATE __attribute__((deprecated))
 

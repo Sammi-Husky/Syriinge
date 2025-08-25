@@ -1,10 +1,9 @@
 #include <OS/OSError.h>
 #include <gf/gf_heap_manager.h>
 #include <gf/gf_module.h>
-#include <memory.h>
+#include <string.h>
 
-#include "plugin.h"
-#include "string.h"
+#include "plugin.hpp"
 
 namespace Syringe {
     typedef PluginMeta* (*PluginPrologFN)(SyringeCore::CoreApi*);
@@ -17,29 +16,20 @@ namespace Syringe {
     {
         gfFileIOHandle handle;
         handle.read(this->path, Heaps::MenuInstance, 0);
-        void* buffer = handle.getBuffer();
-        void* heapAddr = gfHeapManager::getHeap(Heaps::Syringe);
-        size_t size = handle.getSize();
 
-        // Create the gfModule object
-        this->module = gfModule::create(heapAddr, buffer, size);
+        // Create the gfModule directly without intermediate storage
+        this->module = gfModule::create(
+            gfHeapManager::getHeap(Heaps::Syringe),
+            handle.getBuffer(),
+            handle.getSize());
 
-        // Free the buffer and release the handle
-        free(buffer);
+        // Release the handle immediately after module creation
         handle.release();
 
-        // Normally module prolog doesn't return anything, but in our case we stipulate
-        // that it returns a pointer to the plugin metadata struct and takes the API as an argument
-        PluginPrologFN prolog = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset);
-        this->metadata = prolog(api);
+        // Get plugin metadata from prolog
+        this->metadata = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset)(api);
 
         char buff[10];
-        if (this->metadata->SY_VERSION != Version(SYRINGE_VERSION))
-        {
-            this->metadata->SY_VERSION.toString(this->metadata->SY_VERSION, buff);
-            OSReport("[Syringe] Syringe version mismatch! (plugin: %s, core: %s)\n", buff, SYRINGE_VERSION);
-        }
-
         this->metadata->VERSION.toString(this->metadata->VERSION, buff);
         OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
 

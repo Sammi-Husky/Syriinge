@@ -1,8 +1,8 @@
 #include <gf/gf_module.h>
 
-#include "coreapi.h"
-#include "events.h"
-#include "hook.h"
+#include "coreapi.hpp"
+#include "events.hpp"
+#include "hook.hpp"
 #include <vector.h>
 
 namespace SyringeCore {

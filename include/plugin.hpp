@@ -1,10 +1,10 @@
 #pragma once
 
-#include "sy_core.h"
-#include <gf/gf_module.h>
+#include "sy_core.hpp"
 
 namespace SyringeCore {
     class CoreApi;
+    class gfModule;
 }
 namespace Syringe {
     class Plugin {

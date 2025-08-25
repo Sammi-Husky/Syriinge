@@ -1,7 +1,7 @@
 #include <OS/OSError.h>
 #include <SO/SOBasic.h>
 
-#include "sy_core.h"
+#include "sy_core.hpp"
 
 namespace Syringe {
     extern "C" {

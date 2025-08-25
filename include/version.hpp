@@ -37,6 +37,6 @@ namespace Syringe {
         {
             sprintf(buffer, "%d.%d.%d", version.major, version.minor, version.revision);
         }
-        int major, minor, revision;
+        char major, minor, revision;
     };
 }

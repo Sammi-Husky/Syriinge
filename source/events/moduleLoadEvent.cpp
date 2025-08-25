@@ -1,5 +1,5 @@
-#include "events/moduleLoadEvent.h"
-#include "eventDispatcher.h"
+#include "events/moduleLoadEvent.hpp"
+#include "eventDispatcher.hpp"
 #include <vector.h>
 
 namespace SyringeCore {

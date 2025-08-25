@@ -2,9 +2,9 @@
 #include <gf/gf_heap_manager.h>
 #include <vector.h>
 
-#include "coreapi.h"
-#include "events.h"
-#include "hook.h"
+#include "coreapi.hpp"
+#include "events.hpp"
+#include "hook.hpp"
 
 namespace SyringeCore {
     extern Vector<Hook*> Injections;
