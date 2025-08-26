@@ -78,13 +78,13 @@ namespace Syringe {
 
     SyringeCore::Hook* Plugin::addHook(const u32 address, const void* function, int moduleId)
     {
-        SyringeCore::Hook* hook = core->syHook(address, function, moduleId);
+        SyringeCore::Hook* hook = core->syHook(address, function, false, moduleId);
         this->hooks.push(hook);
         return hook;
     }
     SyringeCore::Hook* Plugin::addHookEx(const u32 address, const void* function, int options, int moduleId)
     {
-        SyringeCore::Hook* hook = core->syHookEx(address, function, options, moduleId);
+        SyringeCore::Hook* hook = core->syHookEx(address, function, options, false, moduleId);
         this->hooks.push(hook);
         return hook;
     }
