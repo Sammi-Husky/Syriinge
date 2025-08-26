@@ -27,7 +27,7 @@ namespace Syringe {
         // Default to the Syringe heap
         u32 heapId = Heaps::Syringe;
 
-        // If the metadata is is present (this is a reload)
+        // If the metadata is present (e.g. this is a reload)
         // then use the heapId from the metadata
         if (this->metadata)
         {
@@ -65,11 +65,13 @@ namespace Syringe {
             this->metadata->VERSION.toString(this->metadata->VERSION, buff);
             OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
         }
-
-        // This is kind of dumb because we just loaded the plugin and are unloading it immediately
-        // but if the plugin flags dictate a specific load type, we need to respect that. Currently
-        // there is no way to get plugin flags without loading the plugin first to request them
-        this->unloadPlugin();
+        else
+        {
+            // This is kind of dumb because we just loaded the plugin and are unloading it immediately
+            // but if the plugin flags dictate a specific load type, we need to respect that. Currently
+            // there is no way to get plugin flags without loading the plugin first to request them
+            this->unloadPlugin();
+        }
 
         return module;
     }
