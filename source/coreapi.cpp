@@ -5,10 +5,15 @@
 #include "coreapi.hpp"
 #include "events.hpp"
 #include "hook.hpp"
+#include "plugin.hpp"
 
 namespace SyringeCore {
     // Global Hook List. Used for internal / core hooks.
     extern Vector<Hook*> Injections;
+
+    // Global Plugin List.
+    extern Vector<Syringe::Plugin*> Plugins;
+
     Hook* CoreApi::syHookEx(const u32 address, const void* function, int options, int moduleId, bool global)
     {
         Hook* hook = new (Heaps::Syringe) Hook(address,
@@ -60,5 +65,9 @@ namespace SyringeCore {
     {
         Hook* hook = syHookEx(offset, replacement, OPT_DIRECT, moduleId);
         original = hook->getTrampoline();
+    }
+    Vector<Syringe::Plugin*>* CoreApi::getRegisteredPlugins()
+    {
+        return &Plugins;
     }
 }
