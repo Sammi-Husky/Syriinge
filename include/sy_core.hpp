@@ -6,12 +6,15 @@
 
 extern "C" char MOD_PATCH_DIR[0x18];
 
+// Forward Declarations
 class gfModuleInfo;
 namespace SyringeCore {
     class CoreApi;
 }
 namespace Syringe {
     class Plugin;
+}
+namespace Syringe {
     enum LoadTiming {
         TIMING_BOOT = 1 << 0,        // Load the plugin when Syringe first loads
         TIMING_MAIN_MENU = 1 << 1,   // Load the plugin when the main menu is opened
@@ -26,10 +29,10 @@ namespace Syringe {
     };
 
     struct PluginFlags {
-        u32 timing : 5;
-        u32 loading : 2;
-        u32 heap : 8;
-        u32 _reserved : 17;
+        u32 timing : 5;     // Controls when the plugin is loaded
+        u32 loading : 2;    // Controls whether the plugin is loaded persistently or unloaded on scene change
+        u32 heap : 8;       // Ignored if `timing` is set to `TIMING_BOOT`
+        u32 _reserved : 17; // Reserved for future use
     };
 
     struct PluginMeta {
@@ -44,12 +47,8 @@ namespace Syringe {
 
 namespace SyringeCore {
     /**
-     * @brief Iterates over all loaded modules and attempts to apply registered hooks
-     */
-    // void hookLoadedModules();
-
-    /**
      * @brief Initializes the Syringe core systems.
+     *
      * @note This function must be called before running any hooking operations.
      */
     void syInit();

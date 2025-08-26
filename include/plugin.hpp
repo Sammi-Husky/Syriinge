@@ -34,7 +34,17 @@ namespace Syringe {
          */
         bool isEnabled() { return enable; }
         /**
-         * @brief Injects a hook at the target address.
+         * @brief Gets the core API instance.
+         * @warning The hooking functions contained in the core API are much lower level than the ones
+         * provided by the Plugin class. Only use them if you know what you are doing or risk instability.
+         * For example, hooks injected via the core API will not be automatically be tied to the plugin
+         * and must manually be added to the plugin's hook list. Otherwise, unloading the plugin will not
+         * disable those hooks.
+         * @return Pointer to the core API instance.
+         */
+        SyringeCore::CoreApi* getCoreApi() { return core; }
+        /**
+         * @brief Injects a hook at the target address and registers it with the plugin
          * @note Hooks injected via this function WILL automatically return execution to the original function.
          *
          * @param address address or offset to inject our hook at
@@ -44,7 +54,7 @@ namespace Syringe {
          */
         SyringeCore::Hook* addHook(const u32 address, const void* hook, int moduleId);
         /**
-         * @brief Injects a hook at the target address with additional options.
+         * @brief Injects a hook at the target address with additional options and registers it with the plugin.
          *
          * @param address address or offset to inject our hook at
          * @param function pointer to the function to inject

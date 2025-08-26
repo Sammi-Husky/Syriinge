@@ -5,8 +5,14 @@
 
 #define DEPRECATE __attribute__((deprecated))
 
+// Forward Declarations
+namespace Syringe {
+    class Plugin;
+}
 namespace SyringeCore {
     class Hook;
+}
+namespace SyringeCore {
     class CoreApi {
     public:
         ModuleLoadEvent onModuleLoaded;
@@ -87,5 +93,11 @@ namespace SyringeCore {
          * @param moduleId ID of the target module
          */
         DEPRECATE void syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId);
+        /**
+         * @brief Gets the list of plugins registered with the system
+         *
+         * @returns pointer to the vector of registered plugins
+         */
+        Vector<Syringe::Plugin*>* getRegisteredPlugins();
     };
 }
