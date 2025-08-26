@@ -19,6 +19,7 @@ namespace Syringe {
 
     public:
         Plugin(const char* path, SyringeCore::CoreApi* api);
+        ~Plugin();
 
         /**
          * @brief Loads the plugin and returns a pointer to the module.

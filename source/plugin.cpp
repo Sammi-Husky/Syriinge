@@ -97,6 +97,9 @@ namespace Syringe {
             this->hooks[i]->undo();
         }
 
+        // Clear hooks otherwise when reloading duplicates will be added
+        this->hooks.clear();
+
         // Mark hook as disabled
         this->enable = false;
 
@@ -104,4 +107,12 @@ namespace Syringe {
         delete this->module;
     }
 
+    Plugin::~Plugin()
+    {
+        // Unload the plugin and free resources
+        this->unloadPlugin();
+
+        // Set metadata to NULL
+        this->metadata = NULL;
+    }
 }
