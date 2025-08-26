@@ -6,6 +6,7 @@
 #define DEPRECATE __attribute__((deprecated))
 
 namespace SyringeCore {
+    class Hook;
     class CoreApi {
     public:
         ModuleLoadEvent onModuleLoaded;
@@ -16,8 +17,10 @@ namespace SyringeCore {
          * @param address address or offset to inject our hook at
          * @param function pointer to the function to run
          * @param moduleId (optional) ID of the target module, -1 for static hooks
+         * @param global (optional) whether the hook is added to the global hook list
+         * @returns pointer to the created hook
          */
-        void** syHook(const u32 address, const void* function, int moduleId = -1);
+        Hook* syHook(const u32 address, const void* function, int moduleId = -1, bool global = false);
         /**
          * @brief Injects a hook at the target address with additional options.
          *
@@ -25,8 +28,10 @@ namespace SyringeCore {
          * @param function pointer to the function to inject
          * @param options options for the hook
          * @param moduleId (optional) ID of the target module
+         * @param global (optional) whether the hook is added to the global hook list
+         * @returns pointer to the created hook
          */
-        void** syHookEx(const u32 address, const void* function, int options, int moduleId = -1);
+        Hook* syHookEx(const u32 address, const void* function, int options, int moduleId = -1, bool global = false);
         /**
          * @brief Injects a hook at the target address.
          * @note Hooks injected via this function WILL automatically return execution to the original function.

@@ -7,12 +7,38 @@
 extern "C" char MOD_PATCH_DIR[0x18];
 
 class gfModuleInfo;
+namespace SyringeCore {
+    class CoreApi;
+}
 namespace Syringe {
+    class Plugin;
+    enum LoadTiming {
+        TIMING_BOOT = 1 << 0,        // Load the plugin when Syringe first loads
+        TIMING_MAIN_MENU = 1 << 1,   // Load the plugin when the main menu is opened
+        TIMING_CHAR_SELECT = 1 << 2, // Load the plugin when the character select screen is opened
+        TIMING_MATCH = 1 << 3,       // Load the plugin when a match is started
+        TIMING_SUBSPACE = 1 << 4     // Load the plugin when entering subspace
+    };
+
+    enum LoadType {
+        LOAD_PERSIST = 1 << 0, // Persists plugin across scenes
+        LOAD_UNLOAD = 1 << 1   // Unloads plugin when the scene changes
+    };
+
+    struct PluginFlags {
+        u32 timing : 5;
+        u32 loading : 2;
+        u32 heap : 8;
+        u32 _reserved : 17;
+    };
+
     struct PluginMeta {
         char NAME[20];
         char AUTHOR[20];
         Version VERSION;
         Version SY_VERSION;
+        void (*entrypoint)(Plugin* plg);
+        PluginFlags FLAGS;
     };
 } // namespace Syringe
 

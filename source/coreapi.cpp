@@ -7,28 +7,32 @@
 #include "hook.hpp"
 
 namespace SyringeCore {
+    // Global Hook List. Used for internal / core hooks.
     extern Vector<Hook*> Injections;
-
-    void** CoreApi::syHookEx(const u32 address, const void* function, int options, int moduleId)
+    Hook* CoreApi::syHookEx(const u32 address, const void* function, int options, int moduleId, bool global)
     {
         Hook* hook = new (Heaps::Syringe) Hook(address,
                                                reinterpret_cast<u32>(function),
                                                moduleId,
                                                options);
 
-        if (hook->type == HOOK_STATIC)
+        if (hook->getType() == HOOK_STATIC)
         {
             hook->apply(address);
             OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)function);
         }
 
-        Injections.push(hook);
+        // If this is a global hook, add it to the global hook list
+        if (global)
+        {
+            Injections.push(hook);
+        }
 
-        return reinterpret_cast<void**>(&hook->trampoline);
+        return hook;
     }
-    void** CoreApi::syHook(const u32 address, const void* hook, int moduleId)
+    Hook* CoreApi::syHook(const u32 address, const void* hook, int moduleId, bool global)
     {
-        return CoreApi::syHookEx(address, hook, OPT_NONE, moduleId);
+        return CoreApi::syHookEx(address, hook, OPT_NONE, moduleId, global);
     }
 
     void CoreApi::syInlineHook(const u32 address, const void* replacement)
@@ -49,10 +53,12 @@ namespace SyringeCore {
     }
     void CoreApi::syReplaceFunc(const u32 address, const void* replacement, void** original)
     {
-        original = syHookEx(address, replacement, OPT_DIRECT);
+        Hook* hook = syHookEx(address, replacement, OPT_DIRECT);
+        original = hook->getTrampoline();
     }
     void CoreApi::syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId)
     {
-        original = syHookEx(offset, replacement, OPT_DIRECT, moduleId);
+        Hook* hook = syHookEx(offset, replacement, OPT_DIRECT, moduleId);
+        original = hook->getTrampoline();
     }
 }

@@ -13,6 +13,7 @@
 namespace SyringeCore {
     CoreApi* API = NULL;
     Vector<Hook*> Injections;
+    Vector<Syringe::Plugin*> Plugins;
 
     void onModuleLoaded(gfModuleInfo* info)
     {
@@ -21,25 +22,26 @@ namespace SyringeCore {
         for (int i = 0; i < Injections.size(); i++)
         {
             Hook* inject = Injections[i];
-            if (inject->moduleId != header->id)
+            if (inject->getModuleId() != header->id)
                 continue;
 
-            u32 targetAddr = inject->tgtAddr;
+            u32 address = inject->getTarget();
 
             // if this is a module hook, add offset to .text addr
-            if (targetAddr < 0x80000000)
-                targetAddr += header->getTextSectionAddr();
+            if (address < 0x80000000)
+                address += header->getTextSectionAddr();
 
-            if (inject->options & OPT_DIRECT)
+            // Apply the hook
+            inject->apply(address);
+
+            if (inject->getOptions() & OPT_DIRECT)
             {
-                OSReport("[Syringe] Patching %8x -> %8x\n", targetAddr, inject->newAddr);
+                OSReport("[Syringe] Patching %8x -> %8x\n", inject->getInstalledAt(), inject->getDestination());
             }
             else
             {
-                OSReport("[Syringe] Patching %8x -> %8x\n", targetAddr, (u32)&inject->instructions[0]);
+                OSReport("[Syringe] Patching %8x -> %8x\n", inject->getInstalledAt(), (u32)inject->getPayloadAddr());
             }
-
-            inject->apply(targetAddr);
         }
     }
 
@@ -61,13 +63,15 @@ namespace SyringeCore {
 
         // TODO: Once we start tracking loaded plugins we
         // need to change this from stack to heap allocation
-        Syringe::Plugin plg = Syringe::Plugin(tmp);
+        Syringe::Plugin* plg = new (Heaps::Syringe) Syringe::Plugin(tmp, API);
 
-        if (!plg.loadPlugin(API))
+        if (!plg->loadPlugin())
         {
             OSReport("[Syringe] Failed to load plugin (%s)\n", tmp);
             return false;
         }
+
+        Plugins.push(plg);
 
         return true;
     }

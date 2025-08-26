@@ -3,44 +3,103 @@
 #include <gf/gf_module.h>
 #include <string.h>
 
+#include "coreapi.hpp"
+#include "hook.hpp"
 #include "plugin.hpp"
 
 namespace Syringe {
-    typedef PluginMeta* (*PluginPrologFN)(SyringeCore::CoreApi*);
-    Plugin::Plugin(const char* path)
+    typedef PluginMeta* (*PluginPrologFN)();
+    Plugin::Plugin(const char* path, SyringeCore::CoreApi* core)
+        : module(NULL),
+          metadata(NULL),
+          enable(true),
+          core(core)
     {
         strncpy(this->path, path, sizeof(this->path));
     }
 
-    gfModule* Plugin::loadPlugin(SyringeCore::CoreApi* api)
+    gfModule* Plugin::loadPlugin()
     {
+        char buff[10];
         gfFileIOHandle handle;
         handle.read(this->path, Heaps::MenuInstance, 0);
 
-        // Create the gfModule directly without intermediate storage
+        // Default to the Syringe heap
+        u32 heapId = Heaps::Syringe;
+
+        // If the metadata is is present (this is a reload)
+        // then use the heapId from the metadata
+        if (this->metadata)
+        {
+            heapId = this->metadata->FLAGS.heap;
+        }
+
+        // Create the gfModule
         this->module = gfModule::create(
-            gfHeapManager::getHeap(Heaps::Syringe),
+            gfHeapManager::getHeap(static_cast<HeapType>(heapId)),
             handle.getBuffer(),
             handle.getSize());
 
-        // Release the handle immediately after module creation
-        handle.release();
+        // Free the buffer since we no longer need it
+        free(handle.getBuffer());
 
-        // Get plugin metadata from prolog
-        this->metadata = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset)(api);
+        // Get plugin metadata from prolog if this is the
+        // first time we've loaded this plugin
+        if (!this->metadata)
+        {
+            this->metadata = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset)();
+        }
 
-        char buff[10];
-        this->metadata->VERSION.toString(this->metadata->VERSION, buff);
-        OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
+        // Check Syringe version compatibility
+        if (this->metadata->VERSION != Version(SYRINGE_VERSION))
+        {
+            this->metadata->VERSION.toString(this->metadata->VERSION, buff);
+            OSReport("[Syringe] Warning: Plugin %s was built for Syringe v%s, but current version is v%s. This may cause instability.\n",
+                     this->metadata->NAME, buff, SYRINGE_VERSION);
+        }
 
-        this->enable = true;
+        // Call the plugin entrypoint if TIMING_BOOT is set
+        if (this->metadata->FLAGS.timing & TIMING_BOOT)
+        {
+            this->metadata->entrypoint(this);
+            this->metadata->VERSION.toString(this->metadata->VERSION, buff);
+            OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
+        }
+
+        // This is kind of dumb because we just loaded the plugin and are unloading it immediately
+        // but if the plugin flags dictate a specific load type, we need to respect that. Currently
+        // there is no way to get plugin flags without loading the plugin first to request them
+        this->unloadPlugin();
+
         return module;
     }
+
+    SyringeCore::Hook* Plugin::addHook(const u32 address, const void* function, int moduleId)
+    {
+        SyringeCore::Hook* hook = core->syHook(address, function, moduleId);
+        this->hooks.push(hook);
+        return hook;
+    }
+    SyringeCore::Hook* Plugin::addHookEx(const u32 address, const void* function, int options, int moduleId)
+    {
+        SyringeCore::Hook* hook = core->syHookEx(address, function, options, moduleId);
+        this->hooks.push(hook);
+        return hook;
+    }
+
     void Plugin::unloadPlugin()
     {
-        // TECHNICALLY we should unlink first
-        // but i don't see any issues?
-        delete this->module;
+        // Restore original instructions for all hooks
+        for (int i = 0; i < this->hooks.size(); i++)
+        {
+            this->hooks[i]->undo();
+        }
+
+        // Mark hook as disabled
         this->enable = false;
+
+        // Should we unlink before deleting the module?
+        delete this->module;
     }
+
 }
