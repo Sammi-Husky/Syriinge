@@ -26,7 +26,8 @@ namespace SyringeCore {
          * @param global (optional) whether the hook is added to the global hook list
          * @returns pointer to the created hook
          */
-        Hook* syHook(const u32 address, const void* function, int moduleId = -1, bool global = false);
+        Hook* syHook(const u32 address, const void* function, bool global, int moduleId = -1);
+        Hook* syHook(const u32 address, const void* function, int moduleId = -1);
         /**
          * @brief Injects a hook at the target address with additional options.
          *
@@ -37,7 +38,8 @@ namespace SyringeCore {
          * @param global (optional) whether the hook is added to the global hook list
          * @returns pointer to the created hook
          */
-        Hook* syHookEx(const u32 address, const void* function, int options, int moduleId = -1, bool global = false);
+        Hook* syHookEx(const u32 address, const void* function, int options, bool global, int moduleId = -1);
+        Hook* syHookEx(const u32 address, const void* function, int options, int moduleId = -1);
         /**
          * @brief Injects a hook at the target address.
          * @note Hooks injected via this function WILL automatically return execution to the original function.

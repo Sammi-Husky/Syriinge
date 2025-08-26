@@ -3,7 +3,6 @@
 #include <vector.h>
 
 #include "coreapi.hpp"
-#include "events.hpp"
 #include "hook.hpp"
 #include "plugin.hpp"
 
@@ -14,7 +13,7 @@ namespace SyringeCore {
     // Global Plugin List.
     extern Vector<Syringe::Plugin*> Plugins;
 
-    Hook* CoreApi::syHookEx(const u32 address, const void* function, int options, int moduleId, bool global)
+    Hook* CoreApi::syHookEx(const u32 address, const void* function, int options, bool global, int moduleId)
     {
         Hook* hook = new (Heaps::Syringe) Hook(address,
                                                reinterpret_cast<u32>(function),
@@ -35,11 +34,18 @@ namespace SyringeCore {
 
         return hook;
     }
-    Hook* CoreApi::syHook(const u32 address, const void* hook, int moduleId, bool global)
+    Hook* CoreApi::syHookEx(const u32 address, const void* function, int options, int moduleId)
+    {
+        return CoreApi::syHookEx(address, function, options, true, moduleId);
+    }
+    Hook* CoreApi::syHook(const u32 address, const void* hook, bool global, int moduleId)
     {
         return CoreApi::syHookEx(address, hook, OPT_NONE, moduleId, global);
     }
-
+    Hook* CoreApi::syHook(const u32 address, const void* hook, int moduleId)
+    {
+        return CoreApi::syHookEx(address, hook, OPT_NONE, true, moduleId);
+    }
     void CoreApi::syInlineHook(const u32 address, const void* replacement)
     {
         syHookEx(address, replacement, OPT_SAVE_REGS | OPT_ORIG_PRE);
