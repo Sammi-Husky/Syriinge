@@ -6,6 +6,7 @@
 #include <vector.h>
 
 #include "coreapi.hpp"
+#include "events.hpp"
 #include "hook.hpp"
 #include "plugin.hpp"
 #include "sy_core.hpp"
@@ -15,8 +16,14 @@ namespace SyringeCore {
     Vector<Hook*> Injections;
     Vector<Syringe::Plugin*> Plugins;
 
-    void onModuleLoaded(gfModuleInfo* info)
+    void onModuleLoaded(Event& event)
     {
+        if (event.getType() != Event::ModuleLoad)
+            return;
+
+        ModuleLoadEvent& moduleEvent = static_cast<ModuleLoadEvent&>(event);
+
+        gfModuleInfo* info = moduleEvent.getModuleInfo();
         gfModuleHeader* header = info->m_module->header;
 
         for (int i = 0; i < Injections.size(); i++)
@@ -45,6 +52,36 @@ namespace SyringeCore {
         }
     }
 
+    void onSceneChange(Event& event)
+    {
+        if (event.getType() != Event::SceneChange)
+            return;
+
+        SceneChangeEvent& sceneEvent = static_cast<SceneChangeEvent&>(event);
+        gfScene* scene = sceneEvent.getNextScene();
+
+        for (int i = 0; i < Plugins.size(); i++)
+        {
+            Syringe::Plugin* plg = Plugins[i];
+            Syringe::PluginFlags flags = plg->getMetadata()->FLAGS;
+            if (strcmp(scene->m_sceneName, "scMemoryChange") == 0)
+            {
+                if (!(flags.loading & Syringe::LOAD_PERSIST))
+                {
+                    plg->unloadPlugin();
+                }
+            }
+            else if (strcmp(scene->m_sceneName, "scMelee") == 0)
+            {
+                if ((flags.timing & Syringe::TIMING_MATCH))
+                {
+                    plg->loadPlugin();
+                }
+            }
+        }
+        // Handle scene change
+    }
+
     void syInit()
     {
         API = new (Heaps::Syringe) CoreApi();
@@ -52,7 +89,10 @@ namespace SyringeCore {
         EventDispatcher::initializeEvents(API);
 
         // subscribe to onModuleLoaded event to handle applying hooks
-        API->onModuleLoaded.subscribe(onModuleLoaded);
+        API->EventManager.subscribe(Event::ModuleLoad, onModuleLoaded);
+
+        // subscribe to onSceneChange event to handle loading plugins
+        API->EventManager.subscribe(Event::SceneChange, onSceneChange);
     }
 
     bool faLoadPlugin(FAEntryInfo* info, const char* folder)

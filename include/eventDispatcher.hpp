@@ -1,9 +1,25 @@
 #pragma once
 
-#include <gf/gf_module.h>
+#include "events.hpp"
 
+// Forward declarations
+class gfSceneManager;
+class gfModuleInfo;
+class Event;
+template <typename T>
+class Vector;
 namespace SyringeCore {
     class CoreApi;
+}
+
+namespace SyringeCore {
+    typedef void (*EventHandlerFN)(Event& event);
+    struct EventHandler {
+        EventHandler() : type(Event::INVALID), handler(NULL) {}
+        EventHandler(Event::EventType t, EventHandlerFN h) : type(t), handler(h) {}
+        EventHandlerFN handler;
+        Event::EventType type;
+    };
     class EventDispatcher {
     public:
         /**
@@ -12,15 +28,26 @@ namespace SyringeCore {
          */
         static void initializeEvents(CoreApi* API);
         /**
-         * Dispatches an onModuleLoaded event to all subscribers.
-         * @param info Information about the loaded module.
+         * Dispatches an event to all subscribers.
+         * @param event The event to dispatch.
          */
-        static void onModuleLoaded(gfModuleInfo* info);
+        static void dispatchEvent(Event& event);
+        /**
+         * Subscribes to an event.
+         * @param type The type of event to subscribe to.
+         * @param handler The function to call when the event is triggered.
+         */
+        static void subscribe(Event::EventType type, EventHandlerFN handler);
 
     private:
+        static Vector<EventHandler> m_handlers;
         /**
          * Hook for module loaded events.
          */
         static void _moduleLoadedHook();
+        /**
+         * Hook for managing scene related events
+         */
+        static void _setNextScene(gfSceneManager* manager, char* name, int memLayout);
     };
 }

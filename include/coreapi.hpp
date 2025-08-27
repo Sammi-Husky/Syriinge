@@ -1,6 +1,6 @@
 #pragma once
 
-#include "events.hpp"
+#include "eventDispatcher.hpp"
 #include <types.h>
 
 #define DEPRECATE __attribute__((deprecated))
@@ -12,10 +12,13 @@ namespace Syringe {
 namespace SyringeCore {
     class Hook;
 }
+template <typename T>
+class Vector;
+
 namespace SyringeCore {
     class CoreApi {
     public:
-        ModuleLoadEvent onModuleLoaded;
+        EventDispatcher EventManager;
         /**
          * @brief Injects a hook at the target address.
          * @note Hooks injected via this function WILL automatically return execution to the original function.

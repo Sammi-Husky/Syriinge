@@ -91,6 +91,8 @@ namespace Syringe {
 
     void Plugin::unloadPlugin()
     {
+        OSReport("[Syringe] Unloading plugin (%s)\n", this->metadata->NAME);
+
         // Restore original instructions for all hooks
         for (int i = 0; i < this->hooks.size(); i++)
         {

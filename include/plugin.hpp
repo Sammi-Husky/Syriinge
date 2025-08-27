@@ -4,9 +4,9 @@
 #include <vector.h>
 namespace SyringeCore {
     class CoreApi;
-    class gfModule;
     class Hook;
 }
+class gfModule;
 namespace Syringe {
     class Plugin {
     private:
@@ -44,6 +44,11 @@ namespace Syringe {
          * @return Pointer to the core API instance.
          */
         SyringeCore::CoreApi* getCoreApi() { return core; }
+        /**
+         * @brief Gets the plugin metadata.
+         * @return Pointer to the plugin metadata.
+         */
+        PluginMeta* getMetadata() { return metadata; }
         /**
          * @brief Injects a hook at the target address and registers it with the plugin
          * @note Hooks injected via this function WILL automatically return execution to the original function.
