@@ -25,9 +25,10 @@ namespace SyringeCore {
 
     class Hook {
     private:
+        s32 owner;             // ID of the plugin that owns this hook (-1 for core)
         HookType type;         // type of hook (static or relative)
         HookOptions options;   // hook options
-        s8 moduleId;           // module ID this hook belongs to
+        u32 moduleId;          // module ID this hook belongs to
         u32 tgtAddr;           // target address to hook (this can be relative)
         u32 newAddr;           // address to branch to
         u32 instructions[14];  // hook instructions
@@ -35,16 +36,17 @@ namespace SyringeCore {
         u32 installedAt;       // address where the hook was actually installed
         u32 originalInstr;     // original instruction at target address
     public:
-        Hook(u32 source, u32 dest, s8 moduleId, int options);
+        Hook(u32 source, u32 dest, u32 moduleId, int options, s32 owner);
         HookType getType() const { return type; }
         HookOptions getOptions() const { return options; }
-        s8 getModuleId() const { return moduleId; }
+        u32 getModuleId() const { return moduleId; }
         u32 getTarget() const { return tgtAddr; }
         u32 getDestination() const { return newAddr; }
         u32 getInstalledAt() const { return installedAt; }
-        void** getTrampoline() { return reinterpret_cast<void**>(&trampoline); }
+        void getTrampoline(void** func) { *func = &trampoline; }
         void* getPayloadAddr() { return &instructions; }
         u32 getOriginalInstr() const { return originalInstr; }
+        s32 getOwner() const { return owner; }
 
         void apply(u32 address);
         void undo();

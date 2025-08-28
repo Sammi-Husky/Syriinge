@@ -28,12 +28,15 @@ namespace Syringe {
         LOAD_UNLOAD = 1 << 1   // Unloads plugin when the scene changes
     };
 
-    struct PluginFlags {
-        u32 timing : 5;     // Controls when the plugin is loaded
-        u32 loading : 2;    // Controls whether the plugin is loaded persistently or unloaded on scene change
-        u32 heap : 8;       // Ignored if `timing` is set to `TIMING_BOOT`
-        u32 _reserved : 17; // Reserved for future use
-    };
+    typedef union {
+        struct {
+            u32 timing : 5;     // Controls when the plugin is loaded
+            u32 loading : 2;    // Controls whether the plugin is loaded persistently or unloaded on scene change
+            u32 heap : 8;       // Ignored if `timing` is set to `TIMING_BOOT`
+            u32 _reserved : 17; // Reserved for future use
+        };
+        u32 value; // Combined flags
+    } PluginFlags;
 
     struct PluginMeta {
         char NAME[20];

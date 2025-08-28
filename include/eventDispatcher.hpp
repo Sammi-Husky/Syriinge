@@ -6,8 +6,7 @@
 class gfSceneManager;
 class gfModuleInfo;
 class Event;
-template <typename T>
-class Vector;
+
 namespace SyringeCore {
     class CoreApi;
 }
@@ -15,11 +14,13 @@ namespace SyringeCore {
 namespace SyringeCore {
     typedef void (*EventHandlerFN)(Event& event);
     struct EventHandler {
-        EventHandler() : type(Event::INVALID), handler(NULL) {}
-        EventHandler(Event::EventType t, EventHandlerFN h) : type(t), handler(h) {}
-        EventHandlerFN handler;
+        EventHandler() : type(Event::INVALID), func(NULL), caller(-1) {}
+        EventHandler(Event::EventType t, EventHandlerFN h, s32 c = -1) : type(t), func(h), caller(c) {}
+        EventHandlerFN func;
         Event::EventType type;
+        s32 caller; // ID of the subscriber, -1 if not applicable
     };
+
     class EventDispatcher {
     public:
         /**
@@ -35,12 +36,23 @@ namespace SyringeCore {
         /**
          * Subscribes to an event.
          * @param type The type of event to subscribe to.
-         * @param handler The function to call when the event is triggered.
+         * @param func The function to call when the event is triggered.
+         * @param caller The ID of the subscriber.
          */
-        static void subscribe(Event::EventType type, EventHandlerFN handler);
+        static void subscribe(Event::EventType type, EventHandlerFN func, s32 caller);
+        /**
+         * Subscribes to an event.
+         * @param type The type of event to subscribe to.
+         * @param func The function to call when the event is triggered.
+         */
+        static void subscribe(Event::EventType type, EventHandlerFN func);
+        /**
+         * Unsubscribes from all events for a specific caller.
+         * @param caller The ID of the subscriber.
+         */
+        static void unsubscribe(s32 caller);
 
     private:
-        static Vector<EventHandler> m_handlers;
         /**
          * Hook for module loaded events.
          */

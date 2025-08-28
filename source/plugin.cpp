@@ -9,16 +9,17 @@
 
 namespace Syringe {
     typedef PluginMeta* (*PluginPrologFN)();
-    Plugin::Plugin(const char* path, SyringeCore::CoreApi* core)
+    Plugin::Plugin(const char* path, SyringeCore::CoreApi* core, s32 id)
         : module(NULL),
           metadata(NULL),
           enable(true),
-          core(core)
+          core(core),
+          id(id)
     {
         strncpy(this->path, path, sizeof(this->path));
     }
 
-    gfModule* Plugin::loadPlugin()
+    bool Plugin::load()
     {
         char buff[10];
         gfFileIOHandle handle;
@@ -34,14 +35,25 @@ namespace Syringe {
             heapId = this->metadata->FLAGS.heap;
         }
 
+        void* buffer = handle.getBuffer();
+
+        if (!buffer)
+        {
+            // Failed to load module
+            return false;
+        }
+
         // Create the gfModule
         this->module = gfModule::create(
             gfHeapManager::getHeap(static_cast<HeapType>(heapId)),
-            handle.getBuffer(),
+            buffer,
             handle.getSize());
 
-        // Free the buffer since we no longer need it
-        free(handle.getBuffer());
+        // We can release the file handle now that the module has been created
+        handle.release();
+
+        // Free the buffer allocated by the handle
+        free(buffer);
 
         // Get plugin metadata from prolog if this is the
         // first time we've loaded this plugin
@@ -58,61 +70,63 @@ namespace Syringe {
                      this->metadata->NAME, buff, SYRINGE_VERSION);
         }
 
-        // Call the plugin entrypoint if TIMING_BOOT is set
-        if (this->metadata->FLAGS.timing & TIMING_BOOT)
-        {
-            this->metadata->entrypoint(this);
-            this->metadata->VERSION.toString(this->metadata->VERSION, buff);
-            OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
-        }
-        else
-        {
-            // This is kind of dumb because we just loaded the plugin and are unloading it immediately
-            // but if the plugin flags dictate a specific load type, we need to respect that. Currently
-            // there is no way to get plugin flags without loading the plugin first to request them
-            this->unloadPlugin();
-        }
+        OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
 
-        return module;
+        return true;
     }
-
-    SyringeCore::Hook* Plugin::addHook(const u32 address, const void* function, int moduleId)
+    void Plugin::execute()
     {
-        SyringeCore::Hook* hook = core->syHook(address, function, false, moduleId);
-        this->hooks.push(hook);
-        return hook;
+        // Call the plugin entrypoint
+        this->metadata->entrypoint(this);
+        OSReport("[Syringe] Executing plugin (%s)\n", this->metadata->NAME);
     }
-    SyringeCore::Hook* Plugin::addHookEx(const u32 address, const void* function, int options, int moduleId)
-    {
-        SyringeCore::Hook* hook = core->syHookEx(address, function, options, false, moduleId);
-        this->hooks.push(hook);
-        return hook;
-    }
-
-    void Plugin::unloadPlugin()
+    void Plugin::unload()
     {
         OSReport("[Syringe] Unloading plugin (%s)\n", this->metadata->NAME);
 
         // Restore original instructions for all hooks
-        for (int i = 0; i < this->hooks.size(); i++)
-        {
-            this->hooks[i]->undo();
-        }
+        this->core->undoHooksByOwner(this->id);
+
+        // Clear all event listeners associated with this plugin
+        this->clearEventHandlers();
 
         // Clear hooks otherwise when reloading duplicates will be added
-        this->hooks.clear();
+        this->core->removeHooksByOwner(this->id);
 
-        // Mark hook as disabled
-        this->enable = false;
+        if (this->module)
+        {
+            // Should we unlink before deleting the module?
+            delete this->module;
+        }
 
-        // Should we unlink before deleting the module?
-        delete this->module;
+        // Make sure we set the module pointer to NULL
+        this->module = NULL;
+    }
+
+    SyringeCore::Hook* Plugin::addHook(const u32 address, const void* function, int moduleId)
+    {
+        SyringeCore::Hook* hook = core->syHook(address, function, this->id, moduleId);
+        return hook;
+    }
+    SyringeCore::Hook* Plugin::addHookEx(const u32 address, const void* function, int options, int moduleId)
+    {
+        SyringeCore::Hook* hook = core->syHookEx(address, function, options, this->id, moduleId);
+        return hook;
+    }
+    void Plugin::addEventHandler(Event::EventType type, SyringeCore::EventHandlerFN func)
+    {
+        // Subscribe to the event
+        SyringeCore::EventDispatcher::subscribe(type, func, this->id);
+    }
+    void Plugin::clearEventHandlers()
+    {
+        SyringeCore::EventDispatcher::unsubscribe(this->id);
     }
 
     Plugin::~Plugin()
     {
         // Unload the plugin and free resources
-        this->unloadPlugin();
+        this->unload();
 
         // Set metadata to NULL
         this->metadata = NULL;

@@ -1,54 +1,54 @@
 #pragma once
 
-#include "sy_core.hpp"
+#include <gf/gf_module.h>
 #include <vector.h>
-namespace SyringeCore {
-    class CoreApi;
-    class Hook;
-}
-class gfModule;
+
+#include "coreapi.hpp"
+#include "events.hpp"
+#include "hook.hpp"
+#include "sy_core.hpp"
+
 namespace Syringe {
     class Plugin {
-    private:
-        char path[126];                   // Path to the plugin file
-        PluginMeta* metadata;             // Pointer to the plugin metadata
-        gfModule* module;                 // Pointer to the loaded module
-        bool enable;                      // Indicates if the plugin is enabled
-        SyringeCore::CoreApi* core;       // Pointer to the core API
-        Vector<SyringeCore::Hook*> hooks; // Contains all hooks added by the plugin
-
     public:
-        Plugin(const char* path, SyringeCore::CoreApi* api);
+        Plugin(const char* path, SyringeCore::CoreApi* api, s32 id);
         ~Plugin();
 
         /**
          * @brief Loads the plugin and returns a pointer to the module.
          */
-        gfModule* loadPlugin();
+        virtual bool load();
         /**
          * @brief Unloads the plugin and restores original instructions for all hooks.
          */
-        void unloadPlugin();
+        virtual void unload();
+        /**
+         * @brief Executes the plugin's main functionality.
+         */
+        virtual void execute();
         /**
          * @brief Checks if the plugin is enabled.
          * @return True if the plugin is enabled, false otherwise.
          */
-        bool isEnabled() { return enable; }
+        virtual bool isEnabled() { return enable; }
         /**
          * @brief Gets the core API instance.
          * @warning The hooking functions contained in the core API are much lower level than the ones
-         * provided by the Plugin class. Only use them if you know what you are doing or risk instability.
-         * For example, hooks injected via the core API will not be automatically be tied to the plugin
-         * and must manually be added to the plugin's hook list. Otherwise, unloading the plugin will not
-         * disable those hooks.
+         * provided by the Plugin class. Only use this if you need more advanced functionality not provided
+         * by the Plugin instance
          * @return Pointer to the core API instance.
          */
-        SyringeCore::CoreApi* getCoreApi() { return core; }
+        virtual SyringeCore::CoreApi* getCoreApi() { return core; }
+        /**
+         * @brief Gets the loaded module.
+         * @return Pointer to the loaded module.
+         */
+        virtual gfModule* getModule() { return module; }
         /**
          * @brief Gets the plugin metadata.
          * @return Pointer to the plugin metadata.
          */
-        PluginMeta* getMetadata() { return metadata; }
+        virtual PluginMeta* getMetadata() { return metadata; }
         /**
          * @brief Injects a hook at the target address and registers it with the plugin
          * @note Hooks injected via this function WILL automatically return execution to the original function.
@@ -58,7 +58,7 @@ namespace Syringe {
          * @param moduleId (optional) ID of the target module, -1 for static hooks
          * @return Pointer to the created hook object
          */
-        SyringeCore::Hook* addHook(const u32 address, const void* hook, int moduleId);
+        virtual SyringeCore::Hook* addHook(const u32 address, const void* hook, int moduleId = -1);
         /**
          * @brief Injects a hook at the target address with additional options and registers it with the plugin.
          *
@@ -68,6 +68,26 @@ namespace Syringe {
          * @param moduleId (optional) ID of the target module
          * @returns pointer to the created hook
          */
-        SyringeCore::Hook* addHookEx(const u32 address, const void* function, int options, int moduleId);
+        virtual SyringeCore::Hook* addHookEx(const u32 address, const void* function, int options, int moduleId = -1);
+
+        /**
+         * @brief Adds an event handler for the specified event type.
+         *
+         * @param type The event type to subscribe to.
+         * @param func The function to call when the event is triggered.
+         */
+        virtual void addEventHandler(Event::EventType type, SyringeCore::EventHandlerFN func);
+        /**
+         * @brief Clears all event handlers for the plugin.
+         */
+        virtual void clearEventHandlers();
+
+    private:
+        char path[126];             // Path to the plugin file
+        s32 id;                     // Unique ID for the plugin
+        PluginMeta* metadata;       // Pointer to the plugin metadata
+        gfModule* module;           // Pointer to the loaded module
+        bool enable;                // Indicates if the plugin is enabled
+        SyringeCore::CoreApi* core; // Pointer to the core API
     };
 }

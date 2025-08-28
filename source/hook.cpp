@@ -30,12 +30,13 @@ namespace SyringeCore {
         0x38210010, // addi r1, r1, 0x10
     };
 
-    Hook::Hook(u32 source, u32 dest, s8 moduleId, int opts)
+    Hook::Hook(u32 source, u32 dest, u32 moduleId, int opts, s32 owner)
         : trampoline(Trampoline(0x60000000, 0)),
           tgtAddr(source),
           newAddr(dest),
           options((HookOptions)opts),
           moduleId(moduleId),
+          owner(owner),
           installedAt(NULL)
     {
         type = moduleId == -1 ? HOOK_STATIC : HOOK_RELATIVE; // determine hook type based on moduleId
@@ -49,12 +50,12 @@ namespace SyringeCore {
     {
         if (opts & OPT_SAVE_REGS)
         {
-            memcpy(&instructions, &safe_payload, sizeof(safe_payload));
+            memcpy(&instructions[1], &safe_payload, sizeof(safe_payload));
             instructions[6] = SyringeUtils::EncodeBranch((u32)&instructions[6], newAddr, true);
         }
         else
         {
-            memcpy(&instructions, &simple_payload, sizeof(simple_payload));
+            memcpy(&instructions[1], &simple_payload, sizeof(simple_payload));
             instructions[4] = SyringeUtils::EncodeBranch((u32)&instructions[4], newAddr, true);
         }
 
@@ -110,15 +111,15 @@ namespace SyringeCore {
         // restore the original instruction at the target address
         *(u32*)installedAt = originalInstr;
 
+        // invalidate instruction cache for the target address
+        ICInvalidateRange((void*)installedAt, 0x04);
+
         // Clear variables to reflect that the hook is no longer active
         installedAt = NULL;
         originalInstr = NULL;
-
-        // invalidate instruction cache for the target address
-        ICInvalidateRange((void*)installedAt, 0x04);
     }
 
-    Trampoline::Trampoline(u32 originalInstr, u32 retAddr) : originalInstr(originalInstr)
+    Trampoline::Trampoline(u32 originalInstr, u32 retAddr) : originalInstr(originalInstr), branch(0)
     {
         branch = SyringeUtils::EncodeBranch((u32)&branch, retAddr);
     }

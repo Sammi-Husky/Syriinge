@@ -13,12 +13,13 @@ namespace SyringeCore {
     // Global Plugin List.
     extern Vector<Syringe::Plugin*> Plugins;
 
-    Hook* CoreApi::syHookEx(const u32 address, const void* function, int options, bool global, int moduleId)
+    Hook* CoreApi::syHookEx(const u32 address, const void* function, int options, int owner, int moduleId)
     {
         Hook* hook = new (Heaps::Syringe) Hook(address,
                                                reinterpret_cast<u32>(function),
                                                moduleId,
-                                               options);
+                                               options,
+                                               owner);
 
         if (hook->getType() == HOOK_STATIC)
         {
@@ -26,52 +27,45 @@ namespace SyringeCore {
             OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)function);
         }
 
-        // If this is a global hook, add it to the global hook list
-        if (global)
-        {
-            Injections.push(hook);
-        }
+        Injections.push(hook);
 
         return hook;
     }
     Hook* CoreApi::syHookEx(const u32 address, const void* function, int options, int moduleId)
     {
-        return CoreApi::syHookEx(address, function, options, true, moduleId);
+        return CoreApi::syHookEx(address, function, options, -1, moduleId);
     }
-    Hook* CoreApi::syHook(const u32 address, const void* hook, bool global, int moduleId)
+    Hook* CoreApi::syHook(const u32 address, const void* hook, int owner, int moduleId)
     {
-        return CoreApi::syHookEx(address, hook, OPT_NONE, moduleId, global);
+        return CoreApi::syHookEx(address, hook, OPT_NONE, owner, moduleId);
     }
     Hook* CoreApi::syHook(const u32 address, const void* hook, int moduleId)
     {
-        return CoreApi::syHookEx(address, hook, OPT_NONE, true, moduleId);
+        return CoreApi::syHookEx(address, hook, OPT_NONE, -1, moduleId);
     }
-    void CoreApi::syInlineHook(const u32 address, const void* replacement)
+
+    void CoreApi::removeHooksByOwner(int owner)
     {
-        syHookEx(address, replacement, OPT_SAVE_REGS | OPT_ORIG_PRE);
+        for (int i = 0; i < Injections.size(); i++)
+        {
+            if (Injections[i]->getOwner() == owner)
+            {
+                Injections[i]->undo();
+                Injections.removeAt(i);
+            }
+        }
     }
-    void CoreApi::syInlineHookRel(const u32 offset, const void* replacement, int moduleId)
+    void CoreApi::undoHooksByOwner(int owner)
     {
-        syHookEx(offset, replacement, OPT_SAVE_REGS | OPT_ORIG_PRE, moduleId);
+        for (int i = 0; i < Injections.size(); i++)
+        {
+            if (Injections[i]->getOwner() == owner)
+            {
+                Injections[i]->undo();
+            }
+        }
     }
-    void CoreApi::sySimpleHook(const u32 address, const void* replacement)
-    {
-        syHookEx(address, replacement, OPT_DIRECT);
-    }
-    void CoreApi::sySimpleHookRel(const u32 offset, const void* replacement, int moduleId)
-    {
-        syHookEx(offset, replacement, OPT_DIRECT, moduleId);
-    }
-    void CoreApi::syReplaceFunc(const u32 address, const void* replacement, void** original)
-    {
-        Hook* hook = syHookEx(address, replacement, OPT_DIRECT);
-        original = hook->getTrampoline();
-    }
-    void CoreApi::syReplaceFuncRel(const u32 offset, const void* replacement, void** original, int moduleId)
-    {
-        Hook* hook = syHookEx(offset, replacement, OPT_DIRECT, moduleId);
-        original = hook->getTrampoline();
-    }
+
     Vector<Syringe::Plugin*>* CoreApi::getRegisteredPlugins()
     {
         return &Plugins;
