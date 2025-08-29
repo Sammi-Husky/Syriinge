@@ -2,7 +2,6 @@
 #include <OS/OSError.h>
 
 #include <gf/gf_module.h>
-#include <stdio.h>
 #include <vector.h>
 
 #include "coreapi.hpp"

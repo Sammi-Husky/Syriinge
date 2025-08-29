@@ -13,15 +13,15 @@ void _epilog();
 void _unresolved();
 }
 
-void InitNetwork()
-{
-    SOInitInfo info = {
-        SOAlloc,
-        SOFree
-    };
-    SOInit(&info);
-    SOStartupEx(0x2bf20);
-}
+// void InitNetwork()
+// {
+//     SOInitInfo info = {
+//         SOAlloc,
+//         SOFree
+//     };
+//     SOInit(&info);
+//     SOStartupEx(0x2bf20);
+// }
 
 void _prolog()
 {
@@ -41,11 +41,7 @@ void _prolog()
     // THIS SLOWS DOWN CONSOLE BOOT BY 40 SECONDS
     // InitNetwork();
 
-    OSReport("[Syringe] Loading Plugins\n");
-
     int num = SyringeCore::syLoadPlugins("plugins");
-
-    OSReport("[Syringe] Done. (plugins: %d)\n", num);
 
     // try and apply rel hooks to modules which
     // were already loaded before loading plugins

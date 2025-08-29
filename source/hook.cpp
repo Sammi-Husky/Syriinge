@@ -41,7 +41,7 @@ namespace SyringeCore {
     {
         type = moduleId == -1 ? HOOK_STATIC : HOOK_RELATIVE; // determine hook type based on moduleId
 
-        for (int i = 0; i < sizeof(instructions) / sizeof(instructions[0]); i++)
+        for (u8 i = 0; i < sizeof(instructions) / sizeof(instructions[0]); i++)
         {
             instructions[i] = 0x60000000; // initialize all instructions to NOP
         }
