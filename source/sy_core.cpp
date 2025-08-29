@@ -14,7 +14,7 @@
 namespace SyringeCore {
     CoreApi* API = NULL;
     Vector<Hook*> Injections;
-    Vector<Syringe::Plugin*> Plugins;
+    Vector<Plugin*> Plugins;
 
     void applyInjection(Hook* hook, gfModuleHeader* header)
     {
@@ -71,17 +71,17 @@ namespace SyringeCore {
 
         for (int i = 0; i < Plugins.size(); i++)
         {
-            Syringe::Plugin* plg = Plugins[i];
-            Syringe::PluginFlags flags = plg->getMetadata()->FLAGS;
+            Plugin* plg = Plugins[i];
+            PluginFlags flags = plg->getMetadata()->FLAGS;
 
             if (isMemoryChange && plg->getModule() != NULL)
             {
-                if (flags.loading & Syringe::LOAD_PERSIST)
+                if (flags.loading & LOAD_PERSIST)
                     continue;
 
                 plg->unload();
             }
-            else if (isMelee && (flags.timing & Syringe::TIMING_MATCH))
+            else if (isMelee && (flags.timing & TIMING_MATCH))
             {
                 plg->load();
                 plg->execute();
@@ -108,7 +108,7 @@ namespace SyringeCore {
         char* name = info->name[0] == 0 ? info->shortname : info->name;
         sprintf(tmp, "%s/%s", folder, name);
 
-        Syringe::Plugin* plg = new (Heaps::Syringe) Syringe::Plugin(tmp, API, index);
+        Plugin* plg = new (Heaps::Syringe) Plugin(tmp, API, index);
 
         if (!plg->load())
         {
@@ -117,7 +117,7 @@ namespace SyringeCore {
         }
 
         // Unload the plugin after getting metadata if TIMING_BOOT is not set
-        if (!(plg->getMetadata()->FLAGS.timing & Syringe::TIMING_BOOT))
+        if (!(plg->getMetadata()->FLAGS.timing & TIMING_BOOT))
         {
             plg->unload();
         }

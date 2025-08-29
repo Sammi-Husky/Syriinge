@@ -6,12 +6,10 @@
 #define DEPRECATE __attribute__((deprecated))
 
 // Forward Declarations
-namespace Syringe {
-    class Plugin;
-}
 namespace SyringeCore {
     class Hook;
 }
+class Plugin;
 template <typename T>
 class Vector;
 
@@ -60,6 +58,6 @@ namespace SyringeCore {
          *
          * @returns pointer to the vector of registered plugins
          */
-        virtual Vector<Syringe::Plugin*>* getRegisteredPlugins();
+        virtual Vector<Plugin*>* getRegisteredPlugins();
     };
 }

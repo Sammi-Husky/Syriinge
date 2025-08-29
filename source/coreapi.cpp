@@ -11,7 +11,7 @@ namespace SyringeCore {
     extern Vector<Hook*> Injections;
 
     // Global Plugin List.
-    extern Vector<Syringe::Plugin*> Plugins;
+    extern Vector<Plugin*> Plugins;
 
     Hook* CoreApi::syHookEx(const u32 address, const void* function, int options, int owner, int moduleId)
     {
@@ -66,7 +66,7 @@ namespace SyringeCore {
         }
     }
 
-    Vector<Syringe::Plugin*>* CoreApi::getRegisteredPlugins()
+    Vector<Plugin*>* CoreApi::getRegisteredPlugins()
     {
         return &Plugins;
     }
