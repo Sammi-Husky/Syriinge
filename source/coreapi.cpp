@@ -8,7 +8,7 @@
 
 namespace SyringeCore {
     // Global Hook List. Used for internal / core hooks.
-    extern Vector<Hook*> Injections;
+    extern Vector<Hook*> Hooks;
 
     // Global Plugin List.
     extern Vector<Plugin*> Plugins;
@@ -27,7 +27,7 @@ namespace SyringeCore {
             OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)function);
         }
 
-        Injections.push(hook);
+        Hooks.push(hook);
 
         return hook;
     }
@@ -46,22 +46,22 @@ namespace SyringeCore {
 
     void CoreApi::removeHooksByOwner(int owner)
     {
-        for (int i = 0; i < Injections.size(); i++)
+        for (int i = 0; i < Hooks.size(); i++)
         {
-            if (Injections[i]->getOwner() == owner)
+            if (Hooks[i]->getOwner() == owner)
             {
-                Injections[i]->undo();
-                Injections.removeAt(i);
+                Hooks[i]->undo();
+                Hooks.removeAt(i);
             }
         }
     }
     void CoreApi::undoHooksByOwner(int owner)
     {
-        for (int i = 0; i < Injections.size(); i++)
+        for (int i = 0; i < Hooks.size(); i++)
         {
-            if (Injections[i]->getOwner() == owner)
+            if (Hooks[i]->getOwner() == owner)
             {
-                Injections[i]->undo();
+                Hooks[i]->undo();
             }
         }
     }

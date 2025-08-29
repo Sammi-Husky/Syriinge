@@ -12,7 +12,7 @@
 
 namespace SyringeCore {
     CoreApi* API = NULL;
-    Vector<Hook*> Injections;
+    Vector<Hook*> Hooks;
     Vector<Plugin*> Plugins;
 
     void applyInjection(Hook* hook, gfModuleHeader* header)
@@ -50,9 +50,9 @@ namespace SyringeCore {
         gfModuleHeader* header = info->m_module->header;
 
         // Apply global hooks
-        for (int i = 0; i < Injections.size(); i++)
+        for (int i = 0; i < Hooks.size(); i++)
         {
-            applyInjection(Injections[i], header);
+            applyInjection(Hooks[i], header);
         }
     }
 
@@ -68,7 +68,7 @@ namespace SyringeCore {
         bool isMemoryChange = strcmp(sceneName, "scMemoryChange") == 0;
         bool isMelee = strcmp(sceneName, "scMelee") == 0;
 
-        for (int i = 0; i < Plugins.size(); i++)
+        for (u8 i = 0; i < Plugins.size(); i++)
         {
             Plugin* plg = Plugins[i];
             PluginFlags flags = plg->getMetadata()->FLAGS;
