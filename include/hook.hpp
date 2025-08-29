@@ -26,7 +26,6 @@ namespace SyringeCore {
     class Hook {
     private:
         s32 owner;             // ID of the plugin that owns this hook (-1 for core)
-        HookType type;         // type of hook (static or relative)
         HookOptions options;   // hook options
         u32 moduleId;          // module ID this hook belongs to
         u32 tgtAddr;           // target address to hook (this can be relative)
@@ -37,7 +36,7 @@ namespace SyringeCore {
         u32 originalInstr;     // original instruction at target address
     public:
         Hook(u32 source, u32 dest, u32 moduleId, int options, s32 owner);
-        HookType getType() const { return type; }
+        HookType getType() const { return moduleId == -1 ? HOOK_STATIC : HOOK_RELATIVE; }
         HookOptions getOptions() const { return options; }
         u32 getModuleId() const { return moduleId; }
         u32 getTarget() const { return tgtAddr; }
