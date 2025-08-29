@@ -5,6 +5,8 @@
 
 // Forward Declarations
 class gfModuleInfo;
+class gfScene;
+class gfSceneManager;
 
 class Event {
 public:
@@ -32,13 +34,13 @@ public:
     SceneChangeEvent(gfSceneManager* manager) : m_manager(manager) {}
     virtual EventType getType() const { return Event::SceneChange; }
 
-    gfScene* getPrevScene() { return m_manager->m_prevScene; }
-    gfScene* getCurrentScene() { return m_manager->m_currentScene; }
-    gfScene* getNextScene() { return m_manager->m_nextScene; }
-    gfSequence* getPrevSequence() { return m_manager->m_prevSequence; }
-    gfSequence* getCurrentSequence() { return m_manager->m_currentSequence; }
-    gfSequence* getNextSequence() { return m_manager->m_nextSequence; }
-    s32 getMemoryLayout() const { return m_manager->m_memoryLayout; }
+    gfScene* getPrevScene();
+    gfScene* getCurrentScene();
+    gfScene* getNextScene();
+    gfSequence* getPrevSequence();
+    gfSequence* getCurrentSequence();
+    gfSequence* getNextSequence();
+    s32 getMemoryLayout() const;
 
 private:
     gfSceneManager* m_manager;
