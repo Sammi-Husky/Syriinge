@@ -55,12 +55,8 @@ bool Plugin::load()
     // Free the buffer allocated by the handle
     free(buffer);
 
-    // Get plugin metadata from prolog if this is the
-    // first time we've loaded this plugin
-    if (!this->metadata)
-    {
-        this->metadata = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset)();
-    }
+    // Get plugin metadata from the plugin
+    this->metadata = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset)();
 
     // Check Syringe version compatibility
     if (this->metadata->VERSION != Version(SYRINGE_VERSION))
