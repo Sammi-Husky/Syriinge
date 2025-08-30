@@ -53,7 +53,7 @@ bool Plugin::load()
     handle.release();
 
     // Free the buffer allocated by the handle
-    free(buffer);
+    gfHeapManager::free(buffer);
 
     // Get plugin metadata from the plugin
     this->metadata = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset)();
