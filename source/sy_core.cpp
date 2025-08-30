@@ -68,6 +68,8 @@ namespace SyringeCore {
 
         bool isMemoryChange = strcmp(sceneName, "scMemoryChange") == 0;
         bool isMelee = strcmp(sceneName, "scMelee") == 0;
+        bool isMainMenu = strcmp(sceneName, "muMenuMain") == 0;
+        bool isSelChar = strcmp(sceneName, "scSelctCharacter") == 0;
 
         for (u8 i = 0; i < Plugins.size(); i++)
         {
@@ -81,7 +83,18 @@ namespace SyringeCore {
 
                 plg->unload();
             }
+            // TODO: Instead of flags, have plugins provide an array of scene names
             else if (isMelee && (flags.timing & TIMING_MATCH))
+            {
+                plg->load();
+                plg->execute();
+            }
+            else if (isMainMenu && (flags.timing & TIMING_MAIN_MENU))
+            {
+                plg->load();
+                plg->execute();
+            }
+            else if (isSelChar && (flags.timing & TIMING_CHAR_SELECT))
             {
                 plg->load();
                 plg->execute();

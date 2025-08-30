@@ -98,7 +98,7 @@ enum LoadTiming {
     TIMING_MAIN_MENU = 1 << 1,   // Load the plugin when the main menu is opened
     TIMING_CHAR_SELECT = 1 << 2, // Load the plugin when the character select screen is opened
     TIMING_MATCH = 1 << 3,       // Load the plugin when a match is started
-    TIMING_SUBSPACE = 1 << 4     // Load the plugin when entering subspace
+    // TIMING_SUBSPACE = 1 << 4     // Load the plugin when entering subspace
 };
 
 enum LoadType {
