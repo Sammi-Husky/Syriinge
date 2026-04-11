@@ -1,5 +1,6 @@
 #include <OS/OSError.h>
 #include <gf/gf_heap_manager.h>
+#include <gf/gf_module.h>
 #include <vector.h>
 
 #include "coreapi.hpp"
@@ -29,7 +30,7 @@ namespace SyringeCore {
         }
         else
         {
-            const gfModuleInfo* moduleInfoArr = g_gfModuleManager->m_moduleInfos;
+            const gfModuleInfo* moduleInfoArr = gfModuleManager::getInstance()->m_moduleInfos;
             for (u32 i = 0; i < 0x10; i++)
             {
                 gfModule* currModule = moduleInfoArr[i].m_module;
@@ -68,8 +69,10 @@ namespace SyringeCore {
         {
             if (Hooks[i]->getOwner() == owner)
             {
-                Hooks[i]->undo();
+                Hook* hook = Hooks[i];
+                hook->undo();
                 Hooks.removeAt(i);
+                delete hook;
                 i--;
             }
         }
