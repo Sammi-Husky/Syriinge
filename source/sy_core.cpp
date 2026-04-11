@@ -7,7 +7,6 @@
 
 #include "coreapi.hpp"
 #include "events.hpp"
-#include "hook.hpp"
 #include "plugin.hpp"
 #include "sy_core.hpp"
 

@@ -5,6 +5,7 @@
 #include "coreapi.hpp"
 #include "hook.hpp"
 #include "plugin.hpp"
+#include "sy_core.hpp"
 
 namespace SyringeCore {
     // Global Hook List. Used for internal / core hooks.
@@ -25,6 +26,23 @@ namespace SyringeCore {
         {
             hook->apply(address);
             OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)function);
+        }
+        else
+        {
+            const gfModuleInfo* moduleInfoArr = g_gfModuleManager->m_moduleInfos;
+            for (u32 i = 0; i < 0x10; i++)
+            {
+                gfModule* currModule = moduleInfoArr[i].m_module;
+                if (currModule != NULL)
+                {
+                    gfModuleHeader* currModuleHeader = currModule->header;
+                    if (currModuleHeader->id == moduleId)
+                    {
+                        SyringeCore::applyInjection(hook, currModuleHeader);
+                        break;
+                    }
+                }
+            }
         }
 
         Hooks.push(hook);

@@ -1,6 +1,8 @@
 #pragma once
 
+#include "hook.hpp"
 #include "version.hpp"
+#include <gf/gf_module.h>
 
 #define DEPRECATE __attribute__((deprecated))
 
@@ -20,4 +22,11 @@ namespace SyringeCore {
      * @return The number of plugins loaded.
      */
     int syLoadPlugins(const char* folder);
+
+    /**
+     * Attempts to apply the given hook to the specified module.
+     * @param hook The hook to attempt to apply.
+     * @param header The module to attempt to apply the hook to.
+     */
+    void applyInjection(Hook* hook, gfModuleHeader* header);
 }
