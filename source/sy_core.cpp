@@ -1,5 +1,4 @@
 #include <FA.h>
-#include <OS/OSError.h>
 
 #include <gf/gf_module.h>
 #include <string.h>
@@ -7,6 +6,7 @@
 
 #include "coreapi.hpp"
 #include "events.hpp"
+#include "sy_utils.hpp"
 #include "plugin.hpp"
 #include "sy_core.hpp"
 
@@ -31,11 +31,11 @@ namespace SyringeCore {
 
         if (hook->getOptions() & OPT_DIRECT)
         {
-            OSReport("[Syringe] Patching %8x -> %8x\n", hook->getInstalledAt(), hook->getDestination());
+            SY_LOG("Patching %8x -> %8x\n", hook->getInstalledAt(), hook->getDestination());
         }
         else
         {
-            OSReport("[Syringe] Patching %8x -> %8x\n", hook->getInstalledAt(), (u32)hook->getPayloadAddr());
+            SY_LOG("Patching %8x -> %8x\n", hook->getInstalledAt(), (u32)hook->getPayloadAddr());
         }
     }
 
@@ -125,7 +125,7 @@ namespace SyringeCore {
 
         if (!plg->load())
         {
-            OSReport("[Syringe] Failed to load plugin (%s)\n", tmp);
+            SY_LOG("Failed to load plugin (%s)\n", tmp);
             return false;
         }
 

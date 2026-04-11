@@ -2,6 +2,7 @@
 #include <SO/SOBasic.h>
 
 #include "sy_core.hpp"
+#include "sy_utils.hpp"
 
 extern "C" {
 typedef void (*PFN_voidfunc)();
@@ -25,7 +26,7 @@ void _unresolved();
 
 void _prolog()
 {
-    OSReport("[Syringe] Initializing. (ver. %s)\n", SYRINGE_VERSION);
+    SY_LOG("Initializing. (ver. %s)\n", SYRINGE_VERSION);
 
     // Run global constructors
     PFN_voidfunc* ctor;

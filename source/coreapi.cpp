@@ -1,6 +1,8 @@
-#include <OS/OSError.h>
 #include <gf/gf_heap_manager.h>
+#include <gf/gf_module.h>
 #include <vector.h>
+
+#include "sy_utils.hpp"
 
 #include "coreapi.hpp"
 #include "hook.hpp"
@@ -25,11 +27,11 @@ namespace SyringeCore {
         if (hook->getType() == HOOK_STATIC)
         {
             hook->apply(address);
-            OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)function);
+            SY_LOG("Patching %8x -> %8x\n", address, (u32)function);
         }
         else
         {
-            const gfModuleInfo* moduleInfoArr = g_gfModuleManager->m_moduleInfos;
+            const gfModuleInfo* moduleInfoArr = gfModuleManager::getInstance()->m_moduleInfos;
             for (u32 i = 0; i < 0x10; i++)
             {
                 gfModule* currModule = moduleInfoArr[i].m_module;

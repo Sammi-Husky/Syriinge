@@ -1,7 +1,8 @@
-#include <OS/OSError.h>
 #include <gf/gf_heap_manager.h>
 #include <gf/gf_module.h>
 #include <string.h>
+
+#include "sy_utils.hpp"
 
 #include "coreapi.hpp"
 #include "hook.hpp"
@@ -67,10 +68,10 @@ bool Plugin::load()
 
     // Check Syringe version compatibility
     this->metadata->VERSION.toString(this->metadata->VERSION, buff);
-    OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
+    SY_LOG("Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
     if (this->metadata->VERSION != Version(SYRINGE_VERSION))
     {
-        OSReport("[Syringe] Warning: Plugin %s was built for Syringe v%s, but current version is v%s. This may cause instability.\n",
+        SY_LOG("Warning: Plugin %s was built for Syringe v%s, but current version is v%s. This may cause instability.\n",
                  this->metadata->NAME, buff, SYRINGE_VERSION);
     }
 
@@ -83,13 +84,13 @@ void Plugin::execute()
 
     // Call the plugin entrypoint
     this->metadata->entrypoint(this);
-    OSReport("[Syringe] Executing plugin (%s)\n", this->metadata->NAME);
+    SY_LOG("Executing plugin (%s)\n", this->metadata->NAME);
 }
 void Plugin::unload()
 {
     if (this->metadata != NULL)
     {
-        OSReport("[Syringe] Unloading plugin (%s)\n", this->metadata->NAME);
+        SY_LOG("Unloading plugin (%s)\n", this->metadata->NAME);
     }
 
     // Restore original instructions for all hooks
