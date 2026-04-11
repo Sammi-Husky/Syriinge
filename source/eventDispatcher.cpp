@@ -10,8 +10,9 @@
 namespace SyringeCore {
     void (*_setNextSceneOrig)(gfSceneManager* manager, char* name, int memLayout);
 
-    // Vector containing all event handlers
-    static Vector<EventHandler*> m_handlers;
+    // Vector containing all event handlers.
+    // Store handlers by value to avoid a heap allocation per subscription.
+    static Vector<EventHandler> m_handlers;
 
     void EventDispatcher::initializeEvents(CoreApi* api)
     {
@@ -29,18 +30,17 @@ namespace SyringeCore {
         int numCB = m_handlers.size();
         for (int i = 0; i < numCB; i++)
         {
-            EventHandler* handler = m_handlers[i];
-            if (handler->type == event.getType())
+            EventHandler& handler = m_handlers[i];
+            if (handler.type == event.getType())
             {
-                handler->func(event);
+                handler.func(event);
             }
         }
     }
 
     void EventDispatcher::subscribe(Event::EventType type, SyringeCore::EventHandlerFN func, s32 caller)
     {
-        EventHandler* h = new (Heaps::Syringe) EventHandler(type, func, caller);
-        m_handlers.push(h);
+        m_handlers.push(EventHandler(type, func, caller));
     }
 
     void EventDispatcher::unsubscribe(s32 caller)
@@ -48,11 +48,10 @@ namespace SyringeCore {
         // Find any handlers by this caller and remove them
         for (int i = 0; i < m_handlers.size(); i++)
         {
-            EventHandler* handler = m_handlers[i];
-            if (handler->caller == caller)
+            if (m_handlers[i].caller == caller)
             {
-                delete handler;
                 m_handlers.removeAt(i);
+                i--;
             }
         }
     }
