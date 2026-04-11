@@ -52,6 +52,7 @@ namespace SyringeCore {
             {
                 Hooks[i]->undo();
                 Hooks.removeAt(i);
+                i--;
             }
         }
     }
