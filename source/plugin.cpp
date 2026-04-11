@@ -17,10 +17,17 @@ Plugin::Plugin(const char* path, SyringeCore::CoreApi* core, s32 id)
       id(id)
 {
     strncpy(this->path, path, sizeof(this->path));
+    this->path[sizeof(this->path) - 1] = '\0';
 }
 
 bool Plugin::load()
 {
+    if (this->module != NULL)
+    {
+        // Already loaded for current lifecycle.
+        return true;
+    }
+
     char buff[10];
     gfFileIOHandle handle;
     handle.read(this->path, Heaps::MenuInstance, 0);
@@ -71,13 +78,19 @@ bool Plugin::load()
 }
 void Plugin::execute()
 {
+    if (this->metadata == NULL)
+        return;
+
     // Call the plugin entrypoint
     this->metadata->entrypoint(this);
     OSReport("[Syringe] Executing plugin (%s)\n", this->metadata->NAME);
 }
 void Plugin::unload()
 {
-    OSReport("[Syringe] Unloading plugin (%s)\n", this->metadata->NAME);
+    if (this->metadata != NULL)
+    {
+        OSReport("[Syringe] Unloading plugin (%s)\n", this->metadata->NAME);
+    }
 
     // Restore original instructions for all hooks
     this->core->undoHooksByOwner(this->id);
