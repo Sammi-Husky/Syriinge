@@ -70,9 +70,11 @@ namespace SyringeCore {
         {
             instructions[13] = 0x4E800020; // blr
         }
-
-        // By default, we branch to the original function
-        instructions[13] = SyringeUtils::EncodeBranch((u32)&instructions[13], targetAddr + 4);
+        else
+        {
+            // By default, we branch to the original function
+            instructions[13] = SyringeUtils::EncodeBranch((u32)&instructions[13], targetAddr + 4);
+        }
     }
     void Hook::apply(u32 address)
     {
