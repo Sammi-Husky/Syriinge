@@ -30,12 +30,13 @@ namespace SyringeCore {
         u32 moduleId;          // module ID this hook belongs to
         u32 tgtAddr;           // target address to hook (this can be relative)
         u32 newAddr;           // address to branch to
-        u32 instructions[14];  // hook instructions
+        u32* payload;          // dynamically sized payload for non-direct hooks
         Trampoline trampoline; // trampoline to facilitate calling original function
         u32 installedAt;       // address where the hook was actually installed
         u32 originalInstr;     // original instruction at target address
     public:
         Hook(u32 source, u32 dest, u32 moduleId, int options, s32 owner);
+        ~Hook();
         HookType getType() const { return moduleId == -1 ? HOOK_STATIC : HOOK_RELATIVE; }
         HookOptions getOptions() const { return options; }
         u32 getModuleId() const { return moduleId; }
@@ -43,7 +44,7 @@ namespace SyringeCore {
         u32 getDestination() const { return newAddr; }
         u32 getInstalledAt() const { return installedAt; }
         void getTrampoline(void** func) { *func = &trampoline; }
-        void* getPayloadAddr() { return &instructions; }
+        void* getPayloadAddr() { return payload; }
         u32 getOriginalInstr() const { return originalInstr; }
         s32 getOwner() const { return owner; }
 
@@ -51,6 +52,6 @@ namespace SyringeCore {
         void undo();
 
     private:
-        void setInstructions(u32 targetAddr, HookOptions opts);
+        void setInstructions(u32 targetAddr);
     };
 }
