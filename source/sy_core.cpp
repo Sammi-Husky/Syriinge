@@ -75,8 +75,9 @@ namespace SyringeCore {
         {
             Plugin* plg = Plugins[i];
             PluginFlags flags = plg->getMetadata()->FLAGS;
+            bool isLoaded = plg->getModule() != NULL;
 
-            if (isMemoryChange && plg->getModule() != NULL)
+            if (isMemoryChange && isLoaded)
             {
                 if (flags.loading & LOAD_PERSIST)
                     continue;
@@ -84,17 +85,17 @@ namespace SyringeCore {
                 plg->unload();
             }
             // TODO: Instead of flags, have plugins provide an array of scene names
-            else if (isMelee && (flags.timing & TIMING_MATCH))
+            else if (!isLoaded && isMelee && (flags.timing & TIMING_MATCH))
             {
                 plg->load();
                 plg->execute();
             }
-            else if (isMainMenu && (flags.timing & TIMING_MAIN_MENU))
+            else if (!isLoaded && isMainMenu && (flags.timing & TIMING_MAIN_MENU))
             {
                 plg->load();
                 plg->execute();
             }
-            else if (isSelChar && (flags.timing & TIMING_CHAR_SELECT))
+            else if (!isLoaded && isSelChar && (flags.timing & TIMING_CHAR_SELECT))
             {
                 plg->load();
                 plg->execute();
