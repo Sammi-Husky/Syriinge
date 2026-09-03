@@ -57,6 +57,11 @@ namespace SyringeCore {
     {
         char tmp[0x80];
         char* name = info->name[0] == 0 ? info->shortname : info->name;
+
+        // Skip hidden files
+        if (name[0] == '.')
+            return false;
+
         sprintf(tmp, "%s/%s", folder, name);
 
         // TODO: Once we start tracking loaded plugins we
