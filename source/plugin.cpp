@@ -123,12 +123,11 @@ SyringeCore::Hook* Plugin::addHookEx(const u32 address, const void* function, in
 }
 void Plugin::addEventHandler(Event::EventType type, SyringeCore::EventHandlerFN func)
 {
-    // Subscribe to the event
-    SyringeCore::EventDispatcher::subscribe(type, func, this->id);
+    core->EventManager.subscribe(type, func, this->id);
 }
 void Plugin::clearEventHandlers()
 {
-    SyringeCore::EventDispatcher::unsubscribe(this->id);
+    core->EventManager.unsubscribe(this->id);
 }
 
 Plugin::~Plugin()
