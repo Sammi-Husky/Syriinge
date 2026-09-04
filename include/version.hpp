@@ -6,6 +6,11 @@
 
 class Version {
 public:
+    Version()
+        : major(0), minor(0), revision(0)
+    {
+    }
+
     Version(const char* versionStr)
     {
         sscanf(versionStr, "%d.%d.%d", &this->major, &this->minor, &this->revision);

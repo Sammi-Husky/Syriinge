@@ -1,4 +1,5 @@
 #include <OS/OSError.h>
+#include <OS/OSLink.h>
 #include <gf/gf_heap_manager.h>
 #include <gf/gf_module.h>
 #include <string.h>
@@ -63,7 +64,30 @@ bool Plugin::load()
     gfHeapManager::free(buffer);
 
     // Get plugin metadata from the plugin
-    this->metadata = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset)();
+    PluginMeta* metadata = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset)();
+
+    // copy metadata to plugin instance
+    this->metadata = new (Heaps::Syringe) PluginMeta;
+    strncpy(this->metadata->NAME, metadata->NAME, sizeof(this->metadata->NAME));
+    strncpy(this->metadata->AUTHOR, metadata->AUTHOR, sizeof(this->metadata->AUTHOR));
+    this->metadata->FLAGS = metadata->FLAGS;
+    this->metadata->VERSION = metadata->VERSION;
+    this->metadata->SY_VERSION = metadata->SY_VERSION;
+    this->metadata->entrypoint = metadata->entrypoint;
+    for (int i = 0; i < 10; i++)
+    {
+        if (metadata->LOAD_TIMINGS[i] != NULL)
+        {
+            int length = strlen(metadata->LOAD_TIMINGS[i]) + 1;
+            char* timing = new char[length];
+            strncpy(timing, metadata->LOAD_TIMINGS[i], length);
+            this->metadata->LOAD_TIMINGS[i] = timing;
+        }
+        else
+        {
+            this->metadata->LOAD_TIMINGS[i] = NULL;
+        }
+    }
 
     // Check Syringe version compatibility
     this->metadata->VERSION.toString(this->metadata->VERSION, buff);
@@ -102,14 +126,19 @@ void Plugin::unload()
     // Clear hooks otherwise when reloading duplicates will be added
     this->core->removeHooksByOwner(this->id);
 
+    // Call module epilog and clean up
     if (this->module)
     {
-        // Should we unlink before deleting the module?
+        reinterpret_cast<void (*)(void)>(this->module->header->epilogOffset)();
+        OSUnlink(this->module->header);
         delete this->module;
     }
 
     // Make sure we set the module pointer to NULL
     this->module = NULL;
+
+    // Ensure we clear the entrypoint to prevent accidental use-after-free
+    this->metadata->entrypoint = NULL;
 }
 
 SyringeCore::Hook* Plugin::addHook(const u32 address, const void* function, int moduleId)
@@ -135,6 +164,13 @@ Plugin::~Plugin()
 {
     // Unload the plugin and free resources
     this->unload();
+
+    // Free metadata
+    for (int i = 0; i < 10; i++)
+    {
+        delete[] this->metadata->LOAD_TIMINGS[i];
+    }
+    delete this->metadata;
 
     // Set metadata to NULL
     this->metadata = NULL;
