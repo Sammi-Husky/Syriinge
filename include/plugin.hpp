@@ -53,7 +53,8 @@ public:
     virtual PluginMeta* getMetadata() { return metadata; }
     /**
      * @brief Injects a hook at the target address and registers it with the plugin
-     * @note Hooks injected via this function WILL automatically return execution to the original function.
+     * @note This hook will automatically return execution to the original function but will not save registers or execute the overwritten instruction
+     *
      *
      * @param address address or offset to inject our hook at
      * @param function pointer to the function to run
@@ -93,25 +94,16 @@ private:
     SyringeCore::CoreApi* core; // Pointer to the core API
 };
 
-enum LoadTiming {
-    TIMING_BOOT = 1 << 0,        // Load the plugin when Syringe first loads
-    TIMING_MAIN_MENU = 1 << 1,   // Load the plugin when the main menu is opened
-    TIMING_CHAR_SELECT = 1 << 2, // Load the plugin when the character select screen is opened
-    TIMING_MATCH = 1 << 3,       // Load the plugin when a match is started
-    // TIMING_SUBSPACE = 1 << 4     // Load the plugin when entering subspace
-};
-
 enum LoadType {
-    LOAD_PERSIST = 1 << 0, // Persists plugin across scenes
-    LOAD_UNLOAD = 1 << 1   // Unloads plugin when the scene changes
+    LOAD_PERSIST = 0, // Persists plugin across scenes
+    LOAD_UNLOAD = 1   // Unloads plugin when the scene changes
 };
 
 typedef union {
     struct {
-        u32 timing : 5;     // Controls when the plugin is loaded
-        u32 loading : 2;    // Controls whether the plugin is loaded persistently or unloaded on scene change
-        u32 heap : 8;       // Ignored if `timing` is set to `TIMING_BOOT`
-        u32 _reserved : 17; // Reserved for future use
+        u32 heap : 8;       // Heap to allocate the plugin in
+        u32 loading : 1;    // Controls whether the plugin is loaded persistently or unloaded on scene change
+        u32 _reserved : 23; // Reserved for future use
     };
     u32 value; // Combined flags
 } PluginFlags;
@@ -123,4 +115,5 @@ struct PluginMeta {
     Version SY_VERSION;
     void (*entrypoint)(Plugin* plg);
     PluginFlags FLAGS;
+    const char* LOAD_TIMINGS[10];
 };
