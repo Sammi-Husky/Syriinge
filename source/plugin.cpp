@@ -81,9 +81,10 @@ void Plugin::execute()
     if (this->metadata == NULL)
         return;
 
+    OSReport("[Syringe] Executing plugin (%s)\n", this->metadata->NAME);
+
     // Call the plugin entrypoint
     this->metadata->entrypoint(this);
-    OSReport("[Syringe] Executing plugin (%s)\n", this->metadata->NAME);
 }
 void Plugin::unload()
 {

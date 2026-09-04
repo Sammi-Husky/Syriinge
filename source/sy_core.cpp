@@ -66,16 +66,18 @@ namespace SyringeCore {
         const char* sceneName = scene->m_sceneName;
 
         bool isMemoryChange = strcmp(sceneName, "scMemoryChange") == 0;
-        bool isMelee = strcmp(sceneName, "scMelee") == 0;
-        bool isMainMenu = strcmp(sceneName, "muMenuMain") == 0;
-        bool isSelChar = strcmp(sceneName, "scSelctCharacter") == 0;
 
         for (u8 i = 0; i < Plugins.size(); i++)
         {
             Plugin* plg = Plugins[i];
             PluginFlags flags = plg->getMetadata()->FLAGS;
+            const char** loadTimings = plg->getMetadata()->LOAD_TIMINGS;
             bool isLoaded = plg->getModule() != NULL;
 
+            if (loadTimings == NULL || loadTimings[0] == NULL)
+                continue;
+
+            // Unload any non-persistent plugins during a memory change
             if (isMemoryChange && isLoaded)
             {
                 if (flags.loading & LOAD_PERSIST)
@@ -83,21 +85,24 @@ namespace SyringeCore {
 
                 plg->unload();
             }
-            // TODO: Instead of flags, have plugins provide an array of scene names
-            else if (!isLoaded && isMelee && (flags.timing & TIMING_MATCH))
+            // If the plugin is already loaded and this isn't memory change, don't attempt to load it again
+            else if (isLoaded && !isMemoryChange)
             {
-                plg->load();
-                plg->execute();
+                continue;
             }
-            else if (!isLoaded && isMainMenu && (flags.timing & TIMING_MAIN_MENU))
+
+            // At this point we've determined the plugin is unloaded so check if it should be loaded for the current scene
+            for (int x = 0; x < 10; x++)
             {
-                plg->load();
-                plg->execute();
-            }
-            else if (!isLoaded && isSelChar && (flags.timing & TIMING_CHAR_SELECT))
-            {
-                plg->load();
-                plg->execute();
+                if (loadTimings[x] == NULL)
+                    continue;
+
+                if (stricmp(loadTimings[x], sceneName) == 0)
+                {
+                    plg->load();
+                    plg->execute();
+                    break;
+                }
             }
         }
     }
@@ -137,8 +142,10 @@ namespace SyringeCore {
         // Save the created plugin
         Plugins.push(plg);
 
-        // if TIMING_BOOT, execute the plugin immediately
-        if (plg->getMetadata()->FLAGS.timing & TIMING_BOOT)
+        PluginMeta* meta = plg->getMetadata();
+
+        // if LOAD_TIMINGS is NULL or the first timing is "BOOT", execute the plugin immediately
+        if (meta->LOAD_TIMINGS == NULL || meta->LOAD_TIMINGS[0] == NULL || stricmp(meta->LOAD_TIMINGS[0], "BOOT") == 0)
         {
             plg->execute();
             return true;
