@@ -92,7 +92,7 @@ namespace SyringeCore {
             }
 
             // At this point we've determined the plugin is unloaded so check if it should be loaded for the current scene
-            for (int x = 0; x < 10; x++)
+            for (int x = 0; x < MAX_LOAD_TRIGGERS; x++)
             {
                 if (loadTimings[x] == NULL)
                     continue;

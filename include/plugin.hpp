@@ -108,6 +108,8 @@ typedef union {
     u32 value; // Combined flags
 } PluginFlags;
 
+const int MAX_LOAD_TRIGGERS = 10;
+
 struct PluginMeta {
     char NAME[20];
     char AUTHOR[20];
@@ -115,5 +117,5 @@ struct PluginMeta {
     Version SY_VERSION;
     void (*entrypoint)(Plugin* plg);
     PluginFlags FLAGS;
-    const char* LOAD_TIMINGS[10];
+    const char* LOAD_TIMINGS[MAX_LOAD_TRIGGERS];
 };

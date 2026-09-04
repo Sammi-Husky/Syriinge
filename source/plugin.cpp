@@ -74,7 +74,7 @@ bool Plugin::load()
     this->metadata->VERSION = metadata->VERSION;
     this->metadata->SY_VERSION = metadata->SY_VERSION;
     this->metadata->entrypoint = metadata->entrypoint;
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < MAX_LOAD_TRIGGERS; i++)
     {
         if (metadata->LOAD_TIMINGS[i] != NULL)
         {
@@ -117,14 +117,11 @@ void Plugin::unload()
         OSReport("[Syringe] Unloading plugin (%s)\n", this->metadata->NAME);
     }
 
-    // Restore original instructions for all hooks
-    this->core->undoHooksByOwner(this->id);
+    // Clear hooks otherwise when reloading duplicates will be added
+    this->core->removeHooksByOwner(this->id);
 
     // Clear all event listeners associated with this plugin
     this->clearEventHandlers();
-
-    // Clear hooks otherwise when reloading duplicates will be added
-    this->core->removeHooksByOwner(this->id);
 
     // Call module epilog and clean up
     if (this->module)
@@ -166,7 +163,7 @@ Plugin::~Plugin()
     this->unload();
 
     // Free metadata
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < MAX_LOAD_TRIGGERS; i++)
     {
         delete[] this->metadata->LOAD_TIMINGS[i];
     }
