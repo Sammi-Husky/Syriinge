@@ -31,9 +31,17 @@ LD 			:= $(TOPDIR)/tools/MWCC4_2/mwldeppc.exe
 ELF2REL		:= $(TOPDIR)/tools/elf2rel.exe
 
 
-CCFLAGS		:= -msgstyle gcc -Cpp_exceptions off -c -use_lmw_stmw on -RTTI off -proc gekko -nostdinc -O4,s -enum int -fp hard -u _prolog -u _epilog -u _unresolved -sdata 0 -sdata2 0 -func_align 4 -rostr
+CCFLAGS		:= -msgstyle gcc -Cpp_exceptions off -c -use_lmw_stmw on -RTTI off -proc gekko -nostdinc -O4,s -enum int -fp hard -u _prolog -u _epilog -u _unresolved -sdata 0 -sdata2 0 -func_align 4 -rostr $(SY_DEFINES)
 CXXFLAGS	:= -lang=c++ $(CCFLAGS)
 LDFLAGS		:= -lcf $(LCF) -r1 -fp hard -m _prolog -g
+
+#---------------------------------------------------------------------------------
+# Logging is compiled in by default. `make release` builds with logging stripped
+# by leaving SY_DEBUG undefined, which removes SY_LOG call sites (both the .text
+# call code and the .rodata format strings).
+#---------------------------------------------------------------------------------
+SY_DEFINES	?= -DSY_DEBUG
+export SY_DEFINES
 
 #---------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -96,7 +104,7 @@ export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 #---------------------------------------------------------------------------------
 
 export OUTPUT	:=	$(CURDIR)/$(TARGET)
-.PHONY: $(BUILD) clean_target
+.PHONY: $(BUILD) clean_target release
 
 #---------------------------------------------------------------------------------
 $(BUILD):
@@ -105,6 +113,14 @@ $(BUILD):
 ifdef ADDR
 	py -3 ./convertMap.py $(TARGET).map $(ADDR) $(TARGET)-dolphin.map
 endif
+
+#---------------------------------------------------------------------------------
+# Release build: strip logging by clearing SY_DEBUG. A clean is forced first
+# because toggling the define must invalidate all previously compiled objects.
+#---------------------------------------------------------------------------------
+release:
+	@$(MAKE) --no-print-directory clean
+	@$(MAKE) --no-print-directory SY_DEFINES=
 
 
 #---------------------------------------------------------------------------------

@@ -6,6 +6,7 @@
 #include "hook.hpp"
 #include "plugin.hpp"
 #include "sy_core.hpp"
+#include "sy_log.hpp"
 
 namespace SyringeCore {
     // Linked list of hooks. Tail is used so insertion is O(1) by not having to walk the full list to insert
@@ -23,7 +24,7 @@ namespace SyringeCore {
         if (hook->getType() == HOOK_STATIC)
         {
             hook->apply(address);
-            OSReport("[Syringe] Patching %8x -> %8x\n", address, (u32)function);
+            SY_LOG("[Syringe] Patching %8x -> %8x\n", address, (u32)function);
         }
         else
         {

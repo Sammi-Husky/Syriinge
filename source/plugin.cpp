@@ -8,6 +8,7 @@
 #include "hook.hpp"
 #include "plugin.hpp"
 #include "sy_core.hpp"
+#include "sy_log.hpp"
 
 typedef PluginMeta* (*PluginPrologFN)();
 Plugin::Plugin(const char* path, SyringeCore::CoreApi* core, s32 id)
@@ -87,11 +88,11 @@ bool Plugin::loadIntoHeap(void* heap)
 
     // Check Syringe version compatibility
     this->metadata->VERSION.toString(this->metadata->VERSION, buff);
-    OSReport("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
+    SY_LOG("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
     if (this->metadata->VERSION != Version(SYRINGE_VERSION))
     {
-        OSReport("[Syringe] Warning: Plugin %s was built for Syringe v%s, but current version is v%s. This may cause instability.\n",
-                 this->metadata->NAME, buff, SYRINGE_VERSION);
+        SY_LOG("[Syringe] Warning: Plugin %s was built for Syringe v%s, but current version is v%s. This may cause instability.\n",
+               this->metadata->NAME, buff, SYRINGE_VERSION);
     }
 
     return true;
@@ -101,7 +102,7 @@ void Plugin::execute()
     if (this->metadata == NULL)
         return;
 
-    OSReport("[Syringe] Executing plugin (%s)\n", this->metadata->NAME);
+    SY_LOG("[Syringe] Executing plugin (%s)\n", this->metadata->NAME);
 
     // Call the plugin entrypoint
     this->metadata->entrypoint(this);
@@ -110,7 +111,7 @@ void Plugin::unload()
 {
     if (this->metadata != NULL)
     {
-        OSReport("[Syringe] Unloading plugin (%s)\n", this->metadata->NAME);
+        SY_LOG("[Syringe] Unloading plugin (%s)\n", this->metadata->NAME);
     }
 
     // Clear hooks otherwise when reloading duplicates will be added

@@ -9,6 +9,7 @@
 #include "hash.hpp"
 #include "plugin.hpp"
 #include "sy_core.hpp"
+#include "sy_log.hpp"
 
 namespace SyringeCore {
     CoreApi* API = NULL;
@@ -61,11 +62,11 @@ namespace SyringeCore {
 
         if (hook->getOptions() & OPT_DIRECT)
         {
-            OSReport("[Syringe] Patching %8x -> %8x\n", hook->getInstalledAt(), hook->getDestination());
+            SY_LOG("[Syringe] Patching %8x -> %8x\n", hook->getInstalledAt(), hook->getDestination());
         }
         else
         {
-            OSReport("[Syringe] Patching %8x -> %8x\n", hook->getInstalledAt(), (u32)hook->getPayloadAddr());
+            SY_LOG("[Syringe] Patching %8x -> %8x\n", hook->getInstalledAt(), (u32)hook->getPayloadAddr());
         }
     }
 
@@ -237,7 +238,7 @@ namespace SyringeCore {
 
         if (!plg->load())
         {
-            OSReport("[Syringe] Failed to load plugin (%s)\n", tmp);
+            SY_LOG("[Syringe] Failed to load plugin (%s)\n", tmp);
             return false;
         }
 
