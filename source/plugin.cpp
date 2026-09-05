@@ -77,6 +77,9 @@ bool Plugin::loadIntoHeap(void* heap)
     // Get plugin metadata from the plugin
     PluginMeta* metadata = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset)();
 
+    // Delete the old metadata before copying the new one to prevent memory leak
+    delete this->metadata;
+
     // copy metadata to plugin instance
     this->metadata = new (Heaps::Syringe) PluginMeta;
     strncpy(this->metadata->NAME, metadata->NAME, sizeof(this->metadata->NAME));
@@ -129,16 +132,24 @@ void Plugin::unload()
     // Call module epilog and clean up
     if (this->module)
     {
+        // Call the module epilog before unlinking and deleting it
         reinterpret_cast<void (*)(void)>(this->module->header->epilogOffset)();
+
+        // Unlink the module before deleting it
         OSUnlink(this->module->header);
+
+        // Delete the module to free memory
         delete this->module;
+
+        // Make sure we set the module pointer to NULL
+        this->module = NULL;
     }
 
-    // Make sure we set the module pointer to NULL
-    this->module = NULL;
-
     // Ensure we clear the entrypoint to prevent accidental use-after-free
-    this->metadata->entrypoint = NULL;
+    if (this->metadata != NULL)
+    {
+        this->metadata->entrypoint = NULL;
+    }
 }
 
 SyringeCore::Hook* Plugin::addHook(const u32 address, const void* function, int moduleId)
