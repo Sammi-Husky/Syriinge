@@ -1,45 +1,32 @@
 #pragma once
 
-#include <stdio.h>
+#include <types.h>
 
-#define SYRINGE_VERSION "0.7.0"
+struct Version {
+    union {
+        struct {
+            u8 major;
+            u8 minor;
+            u8 patch;
+            u8 _pad; // alignment / reserved
+        };
+        u32 value; // Combined version as a single 32-bit integer
+    };
 
-class Version {
-public:
-    Version()
-        : major(0), minor(0), revision(0)
+    bool operator==(const Version& other) const
     {
+        return value == other.value;
     }
 
-    Version(const char* versionStr)
+    bool operator!=(const Version& other) const
     {
-        sscanf(versionStr, "%d.%d.%d", &this->major, &this->minor, &this->revision);
-    }
-    friend bool operator<(const Version& lh, const Version& rh)
-    {
-        if (rh.major > lh.major)
-            return true;
-
-        if (rh.minor > lh.minor)
-            return true;
-
-        if (rh.revision > lh.revision)
-            return true;
-
-        return false;
-    }
-    friend bool operator==(const Version& lh, const Version& rh)
-    {
-        return lh.major == rh.major && lh.minor == rh.minor && lh.revision == rh.revision;
-    }
-    friend bool operator!=(const Version& lh, const Version& rh)
-    {
-        return lh.major != rh.major || lh.minor != rh.minor || lh.revision != rh.revision;
+        return value != other.value;
     }
 
-    void toString(const Version& version, char* buffer)
+    bool operator<(const Version& other) const
     {
-        sprintf(buffer, "%d.%d.%d", version.major, version.minor, version.revision);
+        return value < other.value;
     }
-    char major, minor, revision;
 };
+
+const Version SYRINGE_VERSION = { 0, 7, 0 };

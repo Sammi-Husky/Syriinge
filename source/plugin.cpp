@@ -52,7 +52,6 @@ bool Plugin::loadIntoHeap(void* heap)
         return true;
     }
 
-    char buff[10];
     gfFileIOHandle handle;
     handle.read(this->path, Heaps::MenuInstance, 0);
 
@@ -86,13 +85,19 @@ bool Plugin::loadIntoHeap(void* heap)
     this->metadata = new (Heaps::Syringe) PluginMeta;
     memcpy(this->metadata, metadata, sizeof(PluginMeta));
 
+    SY_LOG("[Syringe] Loaded plugin (%s v%d.%d.%d)\n",
+           this->metadata->NAME,
+           this->metadata->VERSION.major,
+           this->metadata->VERSION.minor,
+           this->metadata->VERSION.patch);
+
     // Check Syringe version compatibility
-    this->metadata->VERSION.toString(this->metadata->VERSION, buff);
-    SY_LOG("[Syringe] Loaded plugin (%s, v%s)\n", this->metadata->NAME, buff);
-    if (this->metadata->VERSION != Version(SYRINGE_VERSION))
+    if (this->metadata->SY_VERSION != SYRINGE_VERSION)
     {
-        SY_LOG("[Syringe] Warning: Plugin %s was built for Syringe v%s, but current version is v%s. This may cause instability.\n",
-               this->metadata->NAME, buff, SYRINGE_VERSION);
+        SY_LOG("[Syringe] Warning: Plugin %s was built for Syringe v%d.%d.%d, but current version is v%d.%d.%d. This may cause instability.\n",
+               this->metadata->NAME,
+               this->metadata->SY_VERSION.major, this->metadata->SY_VERSION.minor, this->metadata->SY_VERSION.patch,
+               SYRINGE_VERSION.major, SYRINGE_VERSION.minor, SYRINGE_VERSION.patch);
     }
 
     return true;

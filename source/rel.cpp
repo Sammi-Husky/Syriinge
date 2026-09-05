@@ -26,7 +26,7 @@ void _unresolved();
 
 void _prolog()
 {
-    SY_LOG("[Syringe] Initializing. (ver. %s)\n", SYRINGE_VERSION);
+    SY_LOG("[Syringe] Initializing. (ver. v%d.%d.%d)\n", SYRINGE_VERSION.major, SYRINGE_VERSION.minor, SYRINGE_VERSION.patch);
 
     // Run global constructors
     PFN_voidfunc* ctor;
