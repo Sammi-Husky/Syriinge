@@ -158,21 +158,17 @@ namespace SyringeCore {
             bool isLoaded = plg->getModule() != NULL;
 
             // Unload any non-persistent plugins during a memory change
-            if (isMemoryChange && isLoaded)
+            if (isLoaded)
             {
+                // Skip unloading if this isn't a memory change
+                if (!isMemoryChange)
+                    continue;
+
                 // Persistent plugins survive memory changes.
                 if (flags.loading == LOAD_PERSIST)
-                {
                     continue;
-                }
 
                 plg->unload();
-            }
-            // If the plugin is already loaded and this isn't a memory change, don't
-            // attempt to load it again
-            else if (isLoaded && !isMemoryChange)
-            {
-                continue;
             }
 
             // At this point the plugin is unloaded, so check if a scene trigger
