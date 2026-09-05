@@ -13,11 +13,11 @@
 namespace SyringeCore {
     CoreApi* API = NULL;
 
-    // Linked list of hooks. Tail is used so insertion is O(1) by not having to walk the full list to insert
+    // Linked list of hooks. Tail is used for insertion to keep it O(1)
     Hook* Hooks = NULL;
     Hook* HooksTail = NULL;
 
-    // Linked list of plugins. Tail is used so insertion is O(1) by not having to walk the full list to insert
+    // Linked list of plugins. Tail is used for insertion to keep it O(1)
     Plugin* Plugins = NULL;
     Plugin* PluginsTail = NULL;
 
@@ -205,8 +205,7 @@ namespace SyringeCore {
     // requests "BOOT".
     static bool isBootPlugin(PluginMeta* meta)
     {
-        // No triggers declared at all -> boot default (matches old behavior where
-        // a NULL/empty timings array executed immediately).
+        // No triggers declared at all means execute at boot by default
         if (meta->LOAD_TRIGGERS[0].key == 0 && meta->LOAD_TRIGGERS[0].kind == TRIGGER_SCENE)
         {
             return true;
