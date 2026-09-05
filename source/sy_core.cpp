@@ -21,8 +21,16 @@ namespace SyringeCore {
     Plugin* Plugins = NULL;
     Plugin* PluginsTail = NULL;
 
-    static PluginTrigger* findTrigger(PluginMeta* metadata, TriggerKind kind,
-                                      TriggerAction action, u32 key)
+    /**
+     * Determines if there is a trigger in the plugin metadata that matches the specified kind, action, and key.
+     *
+     * @param metadata The plugin metadata to search in.
+     * @param kind The kind of trigger to find.
+     * @param action The action of the trigger to find.
+     * @param key The key associated with the trigger to find.
+     * @return A pointer to the matching PluginTrigger if found, otherwise NULL.
+     */
+    static PluginTrigger* hasTrigger(PluginMeta* metadata, TriggerKind kind, TriggerAction action, u32 key)
     {
         for (int i = 0; i < MAX_LOAD_TRIGGERS; i++)
         {
@@ -89,7 +97,7 @@ namespace SyringeCore {
                 continue; // already loaded
             }
 
-            PluginTrigger* trigger = findTrigger(meta, TRIGGER_MODULE, TRIGGER_LOAD, nameHash);
+            PluginTrigger* trigger = hasTrigger(meta, TRIGGER_MODULE, TRIGGER_LOAD, nameHash);
             if (trigger != NULL)
             {
                 if (trigger->heapSrc == HEAP_PIGGYBACK)
@@ -123,7 +131,7 @@ namespace SyringeCore {
                 continue; // not loaded
             }
 
-            if (findTrigger(meta, TRIGGER_MODULE, TRIGGER_UNLOAD, nameHash) != NULL)
+            if (hasTrigger(meta, TRIGGER_MODULE, TRIGGER_UNLOAD, nameHash) != NULL)
             {
                 plg->unload();
             }
@@ -166,7 +174,7 @@ namespace SyringeCore {
 
             // At this point the plugin is unloaded, so check if a scene trigger
             // matches the current scene.
-            if (findTrigger(plg->getMetadata(), TRIGGER_SCENE, TRIGGER_LOAD, sceneHash) != NULL)
+            if (hasTrigger(plg->getMetadata(), TRIGGER_SCENE, TRIGGER_LOAD, sceneHash) != NULL)
             {
                 plg->load();
                 plg->execute();
