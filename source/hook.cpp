@@ -31,7 +31,8 @@ namespace SyringeCore {
     };
 
     Hook::Hook(u32 source, u32 dest, u32 moduleId, int opts, s32 owner)
-        : trampoline(Trampoline(0x60000000, 0)),
+        : next(NULL),
+          trampoline(Trampoline(0x60000000, 0)),
           tgtAddr(source),
           newAddr(dest),
           options((HookOptions)opts),

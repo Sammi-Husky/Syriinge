@@ -11,7 +11,8 @@
 
 typedef PluginMeta* (*PluginPrologFN)();
 Plugin::Plugin(const char* path, SyringeCore::CoreApi* core, s32 id)
-    : module(NULL),
+    : next(NULL),
+      module(NULL),
       metadata(NULL),
       enable(true),
       core(core),

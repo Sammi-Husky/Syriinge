@@ -1,7 +1,6 @@
 #include <OS/OSError.h>
 #include <gf/gf_heap_manager.h>
 #include <gf/gf_module.h>
-#include <vector.h>
 
 #include "coreapi.hpp"
 #include "hook.hpp"
@@ -9,11 +8,9 @@
 #include "sy_core.hpp"
 
 namespace SyringeCore {
-    // Global Hook List. Used for internal / core hooks.
-    extern Vector<Hook*> Hooks;
-
-    // Global Plugin List.
-    extern Vector<Plugin*> Plugins;
+    // Linked list of hooks. Tail is used so insertion is O(1) by not having to walk the full list to insert
+    extern Hook* Hooks;
+    extern Hook* HooksTail;
 
     Hook* CoreApi::syHookEx(const u32 address, const void* function, int options, int owner, int moduleId)
     {
@@ -46,7 +43,15 @@ namespace SyringeCore {
             }
         }
 
-        Hooks.push(hook);
+        if (HooksTail != NULL)
+        {
+            HooksTail->setNext(hook);
+        }
+        else
+        {
+            Hooks = hook;
+        }
+        HooksTail = hook;
 
         return hook;
     }
@@ -65,31 +70,43 @@ namespace SyringeCore {
 
     void CoreApi::removeHooksByOwner(int owner)
     {
-        for (int i = 0; i < Hooks.size(); i++)
+        Hook* previous = NULL;
+        Hook* hook = Hooks;
+        while (hook != NULL)
         {
-            if (Hooks[i]->getOwner() == owner)
+            Hook* next = hook->getNext();
+            if (hook->getOwner() == owner)
             {
-                Hook* hook = Hooks[i];
                 hook->undo();
-                Hooks.removeAt(i);
+                if (previous != NULL)
+                {
+                    previous->setNext(next);
+                }
+                else
+                {
+                    Hooks = next;
+                }
+                if (HooksTail == hook)
+                {
+                    HooksTail = previous;
+                }
                 delete hook;
-                i--;
             }
+            else
+            {
+                previous = hook;
+            }
+            hook = next;
         }
     }
     void CoreApi::undoHooksByOwner(int owner)
     {
-        for (int i = 0; i < Hooks.size(); i++)
+        for (Hook* hook = Hooks; hook != NULL; hook = hook->getNext())
         {
-            if (Hooks[i]->getOwner() == owner)
+            if (hook->getOwner() == owner)
             {
-                Hooks[i]->undo();
+                hook->undo();
             }
         }
-    }
-
-    Vector<Plugin*>* CoreApi::getRegisteredPlugins()
-    {
-        return &Plugins;
     }
 }

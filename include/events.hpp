@@ -9,7 +9,7 @@ class gfModuleInfo;
 class gfScene;
 class gfSceneManager;
 
-class Event {
+struct Event {
 public:
     enum EventType {
         ModuleLoad,
@@ -17,60 +17,29 @@ public:
         SceneChange,
         INVALID
     };
-    virtual ~Event() {};
-    virtual EventType getType() const = 0;
-};
+    EventType type;
+    union {
+        gfModuleInfo* moduleInfo;
+        gfSceneManager* sceneManager;
+    } payload;
 
-class ModuleLoadEvent : public Event {
-public:
-    ModuleLoadEvent(gfModuleInfo* info) : m_moduleInfo(info) {}
-    virtual EventType getType() const { return Event::ModuleLoad; }
-    gfModuleInfo* getModuleInfo() { return m_moduleInfo; }
+    EventType getType() const { return type; }
+    gfModuleInfo* getModuleInfo() { return payload.moduleInfo; }
 
     /**
      * @brief Filename of the module being loaded (e.g. "ft_mario.rel").
      */
-    const char* getModuleName();
+    const char* getModuleName() const;
     /**
      * @brief Heap pointer the game loaded this module into
      */
-    void* getHeap();
+    void* getHeap() const;
 
-private:
-    gfModuleInfo* m_moduleInfo;
-};
-
-/**
- * @brief Fired when a game module is unloaded.
- */
-class ModuleUnloadEvent : public Event {
-public:
-    ModuleUnloadEvent(gfModuleInfo* info) : m_moduleInfo(info) {}
-    virtual EventType getType() const { return Event::ModuleUnload; }
-    gfModuleInfo* getModuleInfo() { return m_moduleInfo; }
-
-    /**
-     * @brief Filename of the module being unloaded (e.g. "ft_mario.rel").
-     */
-    const char* getModuleName();
-
-private:
-    gfModuleInfo* m_moduleInfo;
-};
-
-class SceneChangeEvent : public Event {
-public:
-    SceneChangeEvent(gfSceneManager* manager) : m_manager(manager) {}
-    virtual EventType getType() const { return Event::SceneChange; }
-
-    gfScene* getPrevScene();
-    gfScene* getCurrentScene();
-    gfScene* getNextScene();
-    gfSequence* getPrevSequence();
-    gfSequence* getCurrentSequence();
-    gfSequence* getNextSequence();
+    gfScene* getPrevScene() const;
+    gfScene* getCurrentScene() const;
+    gfScene* getNextScene() const;
+    gfSequence* getPrevSequence() const;
+    gfSequence* getCurrentSequence() const;
+    gfSequence* getNextSequence() const;
     s32 getMemoryLayout() const;
-
-private:
-    gfSceneManager* m_manager;
 };

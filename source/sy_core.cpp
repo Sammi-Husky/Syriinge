@@ -3,7 +3,6 @@
 
 #include <gf/gf_module.h>
 #include <string.h>
-#include <vector.h>
 
 #include "coreapi.hpp"
 #include "events.hpp"
@@ -13,8 +12,14 @@
 
 namespace SyringeCore {
     CoreApi* API = NULL;
-    Vector<Hook*> Hooks;
-    Vector<Plugin*> Plugins;
+
+    // Linked list of hooks. Tail is used so insertion is O(1) by not having to walk the full list to insert
+    Hook* Hooks = NULL;
+    Hook* HooksTail = NULL;
+
+    // Linked list of plugins. Tail is used so insertion is O(1) by not having to walk the full list to insert
+    Plugin* Plugins = NULL;
+    Plugin* PluginsTail = NULL;
 
     void applyInjection(Hook* hook, gfModuleHeader* header)
     {
@@ -25,7 +30,9 @@ namespace SyringeCore {
 
         // if this is a module hook, add offset to .text addr
         if (address < 0x80000000)
+        {
             address += header->getTextSectionAddr();
+        }
 
         // Apply the hook
         hook->apply(address);
@@ -45,46 +52,41 @@ namespace SyringeCore {
         if (event.getType() != Event::ModuleLoad)
             return;
 
-        ModuleLoadEvent& moduleEvent = static_cast<ModuleLoadEvent&>(event);
-
-        gfModuleInfo* info = moduleEvent.getModuleInfo();
+        gfModuleInfo* info = event.getModuleInfo();
         gfModuleHeader* header = info->m_module->header;
 
         // Apply global hooks
-        for (int i = 0; i < Hooks.size(); i++)
+        for (Hook* hook = Hooks; hook != NULL; hook = hook->getNext())
         {
-            applyInjection(Hooks[i], header);
+            applyInjection(hook, header);
         }
 
         // Evaluate module load triggers: load any plugin that asked to piggyback
         // on this module's load.
-        const char* moduleName = moduleEvent.getModuleName();
+        const char* moduleName = event.getModuleName();
         u32 nameHash = syHash(moduleName);
 
-        for (u8 i = 0; i < Plugins.size(); i++)
+        for (Plugin* plg = Plugins; plg != NULL; plg = plg->getNext())
         {
-            Plugin* plg = Plugins[i];
             PluginMeta* meta = plg->getMetadata();
 
             if (plg->getModule() != NULL)
+            {
                 continue; // already loaded
+            }
 
             for (int x = 0; x < MAX_LOAD_TRIGGERS; x++)
             {
-                PluginTrigger& t = meta->LOAD_TRIGGERS[x];
-
-                // Skip triggers that are not module load triggers
-                if (t.kind != TRIGGER_MODULE || t.action != TRIGGER_LOAD)
+                PluginTrigger& trigger = meta->LOAD_TRIGGERS[x];
+                if (trigger.kind != TRIGGER_MODULE || trigger.action != TRIGGER_LOAD || trigger.key != nameHash)
+                {
                     continue;
+                }
 
-                // Skip triggers that do not match the current module's name hash
-                if (t.key != nameHash)
-                    continue;
-
-                if (t.heapSrc == HEAP_PIGGYBACK)
+                if (trigger.heapSrc == HEAP_PIGGYBACK)
                 {
                     // Load into the same heap the game used for this module
-                    plg->loadIntoHeap(moduleEvent.getHeap());
+                    plg->loadIntoHeap(event.getHeap());
                 }
                 else
                 {
@@ -102,24 +104,24 @@ namespace SyringeCore {
         if (event.getType() != Event::ModuleUnload)
             return;
 
-        ModuleUnloadEvent& moduleEvent = static_cast<ModuleUnloadEvent&>(event);
-        u32 nameHash = syHash(moduleEvent.getModuleName());
+        u32 nameHash = syHash(event.getModuleName());
 
-        for (u8 i = 0; i < Plugins.size(); i++)
+        for (Plugin* plg = Plugins; plg != NULL; plg = plg->getNext())
         {
-            Plugin* plg = Plugins[i];
             PluginMeta* meta = plg->getMetadata();
 
             if (plg->getModule() == NULL)
+            {
                 continue; // not loaded
+            }
 
             for (int x = 0; x < MAX_LOAD_TRIGGERS; x++)
             {
-                PluginTrigger& t = meta->LOAD_TRIGGERS[x];
-                if (t.kind != TRIGGER_MODULE || t.action != TRIGGER_UNLOAD)
+                PluginTrigger& trigger = meta->LOAD_TRIGGERS[x];
+                if (trigger.kind != TRIGGER_MODULE || trigger.action != TRIGGER_UNLOAD || trigger.key != nameHash)
+                {
                     continue;
-                if (t.key != nameHash)
-                    continue;
+                }
 
                 plg->unload();
                 break;
@@ -132,18 +134,15 @@ namespace SyringeCore {
         if (event.getType() != Event::SceneChange)
             return;
 
-        SceneChangeEvent& sceneEvent = static_cast<SceneChangeEvent&>(event);
-        gfScene* scene = sceneEvent.getNextScene();
+        gfScene* scene = event.getNextScene();
         const char* sceneName = scene->m_sceneName;
 
         u32 sceneHash = syHash(sceneName);
         bool isMemoryChange = sceneHash == SY_SCMEMORYCHANGE_HASH;
 
-        for (u8 i = 0; i < Plugins.size(); i++)
+        for (Plugin* plg = Plugins; plg != NULL; plg = plg->getNext())
         {
-            Plugin* plg = Plugins[i];
             PluginFlags flags = plg->getMetadata()->FLAGS;
-            PluginTrigger* triggers = plg->getMetadata()->LOAD_TRIGGERS;
             bool isLoaded = plg->getModule() != NULL;
 
             // Unload any non-persistent plugins during a memory change
@@ -151,7 +150,9 @@ namespace SyringeCore {
             {
                 // Persistent plugins survive memory changes.
                 if (flags.loading == LOAD_PERSIST)
+                {
                     continue;
+                }
 
                 plg->unload();
             }
@@ -164,25 +165,18 @@ namespace SyringeCore {
 
             // At this point the plugin is unloaded, so check if a scene trigger
             // matches the current scene.
+            PluginTrigger* triggers = plg->getMetadata()->LOAD_TRIGGERS;
             for (int x = 0; x < MAX_LOAD_TRIGGERS; x++)
             {
-                PluginTrigger& t = triggers[x];
-
-                // Skip triggers that are not scene triggers
-                if (t.kind != TRIGGER_SCENE)
-                    continue;
-
-                // Skip triggers that do not match the current scene's hash
-                if (t.key == 0)
-                    continue; // empty slot
-
-                // If the trigger matches the current scene's hash, load and execute the plugin
-                if (t.key == sceneHash)
+                PluginTrigger& trigger = triggers[x];
+                if (trigger.kind != TRIGGER_SCENE || trigger.action != TRIGGER_LOAD || trigger.key != sceneHash)
                 {
-                    plg->load();
-                    plg->execute();
-                    break;
+                    continue;
                 }
+
+                plg->load();
+                plg->execute();
+                break;
             }
         }
     }
@@ -213,13 +207,17 @@ namespace SyringeCore {
         // No triggers declared at all -> boot default (matches old behavior where
         // a NULL/empty timings array executed immediately).
         if (meta->LOAD_TRIGGERS[0].key == 0 && meta->LOAD_TRIGGERS[0].kind == TRIGGER_SCENE)
+        {
             return true;
+        }
 
         for (int i = 0; i < MAX_LOAD_TRIGGERS; i++)
         {
             PluginTrigger& t = meta->LOAD_TRIGGERS[i];
             if (t.kind == TRIGGER_SCENE && t.key == SY_BOOT_HASH)
+            {
                 return true;
+            }
         }
         return false;
     }
@@ -244,7 +242,15 @@ namespace SyringeCore {
         }
 
         // Save the created plugin
-        Plugins.push(plg);
+        if (PluginsTail != NULL)
+        {
+            PluginsTail->setNext(plg);
+        }
+        else
+        {
+            Plugins = plg;
+        }
+        PluginsTail = plg;
 
         PluginMeta* meta = plg->getMetadata();
 
@@ -270,13 +276,17 @@ namespace SyringeCore {
         {
             // Load first found plugin
             if (faLoadPlugin(&info, folder, count))
+            {
                 count++;
+            }
 
             // Loop over and load the rest if there are more
             while (FAFsnext(&info) == 0)
             {
                 if (faLoadPlugin(&info, folder, count))
+                {
                     count++;
+                }
             }
         }
         return count;

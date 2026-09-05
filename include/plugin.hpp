@@ -101,12 +101,17 @@ public:
     virtual void clearEventHandlers();
 
 private:
+    Plugin* next;               // Pointer to the next plugin in the linked list
     char path[126];             // Path to the plugin file
     s32 id;                     // Unique ID for the plugin
     PluginMeta* metadata;       // Pointer to the plugin metadata
     gfModule* module;           // Pointer to the loaded module
     bool enable;                // Indicates if the plugin is enabled
     SyringeCore::CoreApi* core; // Pointer to the core API
+
+public:
+    Plugin* getNext() const { return next; }
+    void setNext(Plugin* plugin) { next = plugin; }
 };
 
 enum LoadType {

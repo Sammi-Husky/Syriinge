@@ -1,6 +1,5 @@
 #include <gf/gf_module.h>
 #include <gf/gf_scene.h>
-#include <vector.h>
 
 #include "coreapi.hpp"
 #include "eventDispatcher.hpp"
@@ -10,9 +9,8 @@
 namespace SyringeCore {
     void (*_setNextSceneOrig)(gfSceneManager* manager, char* name, int memLayout);
 
-    // Vector containing all event handlers.
-    // Store handlers by value to avoid a heap allocation per subscription.
-    static Vector<EventHandler> m_handlers;
+    static EventHandler* m_handlersHead = NULL;
+    static EventHandler* m_handlersTail = NULL;
 
     void EventDispatcher::initializeEvents(CoreApi* api)
     {
@@ -31,32 +29,57 @@ namespace SyringeCore {
 
     void EventDispatcher::dispatchEvent(Event& event)
     {
-        int numCB = m_handlers.size();
-        for (int i = 0; i < numCB; i++)
+        for (EventHandler* handler = m_handlersHead; handler != NULL; handler = handler->next)
         {
-            EventHandler& handler = m_handlers[i];
-            if (handler.type == event.getType())
+            if (handler->type == event.getType())
             {
-                handler.func(event);
+                handler->func(event);
             }
         }
     }
 
     void EventDispatcher::subscribe(Event::EventType type, SyringeCore::EventHandlerFN func, s32 caller)
     {
-        m_handlers.push(EventHandler(type, func, caller));
+        EventHandler* handler = new (Heaps::Syringe) EventHandler(type, func, caller);
+        if (m_handlersTail != NULL)
+        {
+            m_handlersTail->next = handler;
+        }
+        else
+        {
+            m_handlersHead = handler;
+        }
+        m_handlersTail = handler;
     }
 
     void EventDispatcher::unsubscribe(s32 caller)
     {
-        // Find any handlers by this caller and remove them
-        for (int i = 0; i < m_handlers.size(); i++)
+        EventHandler* previous = NULL;
+        EventHandler* handler = m_handlersHead;
+        while (handler != NULL)
         {
-            if (m_handlers[i].caller == caller)
+            EventHandler* next = handler->next;
+            if (handler->caller == caller)
             {
-                m_handlers.removeAt(i);
-                i--;
+                if (previous != NULL)
+                {
+                    previous->next = next;
+                }
+                else
+                {
+                    m_handlersHead = next;
+                }
+                if (m_handlersTail == handler)
+                {
+                    m_handlersTail = previous;
+                }
+                delete handler;
             }
+            else
+            {
+                previous = handler;
+            }
+            handler = next;
         }
     }
 
@@ -68,7 +91,9 @@ namespace SyringeCore {
                 mr info, r30
         }
 
-        ModuleLoadEvent event = ModuleLoadEvent(info);
+        Event event;
+        event.type = Event::ModuleLoad;
+        event.payload.moduleInfo = info;
         EventDispatcher::dispatchEvent(event);
     }
 
@@ -80,7 +105,9 @@ namespace SyringeCore {
                 mr info, r30
         }
 
-        ModuleUnloadEvent event = ModuleUnloadEvent(info);
+        Event event;
+        event.type = Event::ModuleUnload;
+        event.payload.moduleInfo = info;
         EventDispatcher::dispatchEvent(event);
     }
 
@@ -92,7 +119,9 @@ namespace SyringeCore {
         // Call original first
         _setNextSceneOrig(manager, name, memLayout);
 
-        SceneChangeEvent event = SceneChangeEvent(manager);
+        Event event;
+        event.type = Event::SceneChange;
+        event.payload.sceneManager = manager;
         EventDispatcher::dispatchEvent(event);
     }
 }

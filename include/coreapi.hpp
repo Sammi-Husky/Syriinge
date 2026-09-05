@@ -10,8 +10,6 @@ namespace SyringeCore {
     class Hook;
 }
 class Plugin;
-template <typename T>
-class Vector;
 
 namespace SyringeCore {
     class CoreApi {
@@ -53,11 +51,5 @@ namespace SyringeCore {
          * @param owner ID of the plugin that owns the hooks (-1 for core)
          */
         virtual void removeHooksByOwner(int owner);
-        /**
-         * @brief Gets the list of plugins registered with the system
-         *
-         * @returns pointer to the vector of registered plugins
-         */
-        virtual Vector<Plugin*>* getRegisteredPlugins();
     };
 }

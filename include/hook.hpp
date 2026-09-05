@@ -25,6 +25,7 @@ namespace SyringeCore {
 
     class Hook {
     private:
+        Hook* next;
         s32 owner;             // ID of the plugin that owns this hook (-1 for core)
         HookOptions options;   // hook options
         u32 moduleId;          // module ID this hook belongs to
@@ -46,6 +47,8 @@ namespace SyringeCore {
         void* getPayloadAddr() { return &instructions; }
         u32 getOriginalInstr() const { return originalInstr; }
         s32 getOwner() const { return owner; }
+        Hook* getNext() const { return next; }
+        void setNext(Hook* hook) { next = hook; }
 
         void apply(u32 address);
         void undo();
