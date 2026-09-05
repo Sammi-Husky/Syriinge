@@ -1,4 +1,5 @@
 #include <OS/OSCache.h>
+#include <memory.h>
 
 #include "hook.hpp"
 #include "sy_utils.hpp"
@@ -6,6 +7,7 @@
 namespace SyringeCore {
     // Payload template for hooks that need to save registers
     static const u32 safe_payload[] = {
+        0x60000000, // nop (placeholder for original instruction if OPT_ORIG_PRE is set)
         0x9421FF70, // stwu r1, -0x90(r1)
         0x90010008, // stw r0, 0x8(r1)
         0xBC61000C, // stmw r3, 0xC(r1)
@@ -17,10 +19,13 @@ namespace SyringeCore {
         0x80010008, // lwz r0, 0x8(r1)
         0xB861000C, // lmw r3, 0xC(r1)
         0x38210090, // addi r1, r1, 0x90
+        0x60000000, // nop (placeholder for original instruction if OPT_ORIG_POST is set)
+        0x60000000, // nop (placeholder for final branch instruction)
     };
 
     // Payload template for hooks that don't need to save registers
     static const u32 simple_payload[] = {
+        0x60000000, // nop (placeholder for original instruction if OPT_ORIG_PRE is set)
         0x9421FFF0, // stwu r1, -0x10(r1)
         0x7C0802A6, // mflr r0
         0x90010014, // stw r0, 0x14(r1)
@@ -28,7 +33,28 @@ namespace SyringeCore {
         0x80010014, // lwz r0, 0x14(r1)
         0x7C0803A6, // mtlr r0
         0x38210010, // addi r1, r1, 0x10
+        0x60000000, // nop (placeholder for original instruction if OPT_ORIG_POST is set)
+        0x60000000, // nop (placeholder for final branch instruction)
     };
+
+    // constants for calculating payload sizes and branch instruction indices based on options
+    enum {
+        SAFE_PAYLOAD_WORDS = sizeof(safe_payload) / sizeof(safe_payload[0]),
+        SIMPLE_PAYLOAD_WORDS = sizeof(simple_payload) / sizeof(simple_payload[0]),
+        SAFE_BRANCH_IDX = 6,
+        SIMPLE_BRANCH_IDX = 4
+    };
+
+    static u8 calcPayloadWords(HookOptions opts)
+    {
+        if (opts & OPT_DIRECT)
+            return 0;
+
+        else if (opts & OPT_SAVE_REGS)
+            return SAFE_PAYLOAD_WORDS;
+        else
+            return SIMPLE_PAYLOAD_WORDS;
+    }
 
     Hook::Hook(u32 source, u32 dest, u32 moduleId, int opts, s32 owner)
         : next(NULL),
@@ -38,45 +64,63 @@ namespace SyringeCore {
           options((HookOptions)opts),
           moduleId(moduleId),
           owner(owner),
+          payload(NULL),
           installedAt(NULL)
     {
-        for (u8 i = 0; i < sizeof(instructions) / sizeof(instructions[0]); i++)
+        const u8 words = calcPayloadWords(options);
+        if (words != 0)
         {
-            instructions[i] = 0x60000000; // initialize all instructions to NOP
+            payload = new (Heaps::Syringe) u32[words];
+            memcpy(payload,
+                   (options & OPT_SAVE_REGS) ? safe_payload : simple_payload,
+                   words * sizeof(u32));
         }
     }
-    void Hook::setInstructions(u32 targetAddr, HookOptions opts)
+
+    Hook::~Hook()
     {
-        if (opts & OPT_SAVE_REGS)
+        if (payload != NULL)
         {
-            memcpy(&instructions[1], &safe_payload, sizeof(safe_payload));
-            instructions[6] = SyringeUtils::EncodeBranch((u32)&instructions[6], newAddr, true);
+            delete[] payload;
+            payload = NULL;
         }
-        else
-        {
-            memcpy(&instructions[1], &simple_payload, sizeof(simple_payload));
-            instructions[4] = SyringeUtils::EncodeBranch((u32)&instructions[4], newAddr, true);
-        }
+    }
 
-        // original instruction or nop (ORIG_INSTR_PRE)
-        if (opts & OPT_ORIG_PRE)
-            instructions[0] = originalInstr;
+    /// @brief Updates the hook payload with the correct branch and original instruction (if needed)
+    /// @param targetAddr The address we are hooking
+    void Hook::setInstructions(u32 targetAddr)
+    {
+        // If OPT_DIRECT is set, we don't use a payload
+        if (payload == NULL)
+            return;
 
-        // original instruction or nop (ORIG_INSTR_POST)
-        if (opts & OPT_ORIG_POST)
-            instructions[12] = originalInstr;
+        const bool saveRegs = (options & OPT_SAVE_REGS) != 0;
+        const u8 branchIdx = saveRegs ? SAFE_BRANCH_IDX : SIMPLE_BRANCH_IDX;
+        const u8 postIdx = saveRegs ? (SAFE_PAYLOAD_WORDS - 2) : (SIMPLE_PAYLOAD_WORDS - 2);
+
+        if (options & OPT_ORIG_PRE)
+            payload[0] = originalInstr;
+
+        payload[branchIdx] = SyringeUtils::EncodeBranch((u32)&payload[branchIdx], newAddr);
+
+        // original instruction (ORIG_INSTR_POST)
+        if (options & OPT_ORIG_POST)
+            payload[postIdx] = originalInstr;
 
         // If OPT_NO_RETURN is set, we branch to the link register
-        if (opts & OPT_NO_RETURN)
+        // Otherwise, we branch to the original function + 4
+        if (options & OPT_NO_RETURN)
         {
-            instructions[13] = 0x4E800020; // blr
+            payload[postIdx + 1] = 0x4E800020; // blr
         }
         else
         {
-            // By default, we branch to the original function
-            instructions[13] = SyringeUtils::EncodeBranch((u32)&instructions[13], targetAddr + 4);
+            payload[postIdx + 1] = SyringeUtils::EncodeBranch((u32)&payload[postIdx + 1], targetAddr + 4);
         }
     }
+
+    /// @brief Applies the hook by writing the hook branch to the target address and setting up the payload if needed
+    /// @param address Absolute address of the instruction to hook
     void Hook::apply(u32 address)
     {
         // get original instruction
@@ -94,10 +138,13 @@ namespace SyringeCore {
         else
         {
             // Set the instructions for the hook
-            this->setInstructions(address, options);
+            this->setInstructions(address);
 
             // patch the target address with a branch to our hook instructions
-            *(u32*)address = SyringeUtils::EncodeBranch(address, (u32)&instructions[0]);
+            *(u32*)address = SyringeUtils::EncodeBranch(address, (u32)&payload[0]);
+
+            // invalidate instruction cache for the payload body
+            ICInvalidateRange((void*)payload, calcPayloadWords(options) * sizeof(u32));
         }
 
         // Update the installedAt address
@@ -107,6 +154,7 @@ namespace SyringeCore {
         ICInvalidateRange((void*)address, 0x04);
     }
 
+    /// @brief Undoes the hook by restoring the original instruction at the target address
     void Hook::undo()
     {
         // restore the original instruction at the target address
