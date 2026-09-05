@@ -77,7 +77,7 @@ bool Plugin::loadIntoHeap(void* heap)
     gfHeapManager::free(buffer);
 
     // Get plugin metadata from the plugin
-    PluginMeta* metadata = reinterpret_cast<PluginPrologFN>(this->module->header->prologOffset)();
+    PluginMeta* metadata = reinterpret_cast<PluginPrologFN>(this->module->m_header->prologOffset)();
 
     // Delete the old metadata before copying the new one to prevent memory leak
     delete this->metadata;
@@ -124,10 +124,10 @@ void Plugin::unload()
     if (this->module)
     {
         // Call the module epilog before unlinking and deleting it
-        reinterpret_cast<void (*)(void)>(this->module->header->epilogOffset)();
+        reinterpret_cast<void (*)(void)>(this->module->m_header->epilogOffset)();
 
         // Unlink the module before deleting it
-        OSUnlink(this->module->header);
+        OSUnlink(this->module->m_header);
 
         // Delete the module to free memory
         delete this->module;

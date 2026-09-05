@@ -34,7 +34,7 @@ namespace SyringeCore {
                 gfModule* currModule = moduleInfoArr[i].m_module;
                 if (currModule != NULL)
                 {
-                    gfModuleHeader* currModuleHeader = currModule->header;
+                    gfModuleHeader* currModuleHeader = currModule->m_header;
                     if (currModuleHeader->id == moduleId)
                     {
                         SyringeCore::applyInjection(hook, currModuleHeader);

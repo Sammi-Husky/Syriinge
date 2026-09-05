@@ -76,7 +76,7 @@ namespace SyringeCore {
             return;
 
         gfModuleInfo* info = event.getModuleInfo();
-        gfModuleHeader* header = info->m_module->header;
+        gfModuleHeader* header = info->m_module->m_header;
 
         // Apply global hooks
         for (Hook* hook = Hooks; hook != NULL; hook = hook->getNext())
@@ -132,7 +132,9 @@ namespace SyringeCore {
                 continue; // not loaded
             }
 
-            if (hasTrigger(meta, TRIGGER_MODULE, TRIGGER_UNLOAD, nameHash) != NULL)
+            // If a plugin was piggybacked on this module or has an unload trigger for this module, unload it.
+            if (hasTrigger(meta, TRIGGER_MODULE, TRIGGER_LOAD, nameHash) != NULL ||
+                hasTrigger(meta, TRIGGER_MODULE, TRIGGER_UNLOAD, nameHash) != NULL)
             {
                 plg->unload();
             }
@@ -193,17 +195,13 @@ namespace SyringeCore {
         API->EventManager.subscribe(Event::ModuleLoad, &onModuleLoaded, -1);
 
         // subscribe to onModuleUnloaded to handle module unload triggers
-        // NOTE: The game-side unload hook that dispatches ModuleUnloadEvent is not
-        // yet wired (owner RE task). Once it dispatches, this handler is ready.
         API->EventManager.subscribe(Event::ModuleUnload, &onModuleUnloaded, -1);
 
         // subscribe to onSceneChange event to handle loading plugins
         API->EventManager.subscribe(Event::SceneChange, &onSceneChange, -1);
     }
 
-    // Returns true if the plugin should be executed immediately at boot: either no
-    // triggers were declared (first slot empty) or a scene trigger explicitly
-    // requests "BOOT".
+    // Returns true if the plugin should be executed immediately at boot
     static bool isBootPlugin(PluginMeta* meta)
     {
         // No triggers declared at all means execute at boot by default
