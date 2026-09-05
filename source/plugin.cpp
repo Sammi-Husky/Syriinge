@@ -6,16 +6,15 @@
 
 #include "coreapi.hpp"
 #include "hook.hpp"
-#include "plugin.hpp"
+#include "plugin_impl.hpp"
 #include "sy_core.hpp"
 #include "sy_log.hpp"
 
 typedef PluginMeta* (*PluginPrologFN)();
-Plugin::Plugin(const char* path, SyringeCore::CoreApi* core, s32 id)
+PluginImpl::PluginImpl(const char* path, SyringeCore::CoreApi* core, s32 id)
     : next(NULL),
       module(NULL),
       metadata(NULL),
-      enable(true),
       core(core),
       id(id)
 {
@@ -23,7 +22,7 @@ Plugin::Plugin(const char* path, SyringeCore::CoreApi* core, s32 id)
     this->path[sizeof(this->path) - 1] = '\0';
 }
 
-bool Plugin::load(HeapType overrideHeap)
+bool PluginImpl::load(HeapType overrideHeap)
 {
     // Default to the Syringe heap
     u32 heapId = Heaps::Syringe;
@@ -44,7 +43,7 @@ bool Plugin::load(HeapType overrideHeap)
     return this->loadIntoHeap(gfHeapManager::getHeap(static_cast<HeapType>(heapId)));
 }
 
-bool Plugin::loadIntoHeap(void* heap)
+bool PluginImpl::loadIntoHeap(void* heap)
 {
     if (this->module != NULL)
     {
@@ -102,7 +101,7 @@ bool Plugin::loadIntoHeap(void* heap)
 
     return true;
 }
-void Plugin::execute()
+void PluginImpl::execute()
 {
     if (this->metadata == NULL)
         return;
@@ -112,7 +111,7 @@ void Plugin::execute()
     // Call the plugin entrypoint
     this->metadata->entrypoint(this);
 }
-void Plugin::unload()
+void PluginImpl::unload()
 {
     if (this->metadata != NULL)
     {
@@ -148,26 +147,26 @@ void Plugin::unload()
     }
 }
 
-SyringeCore::Hook* Plugin::addHook(const u32 address, const void* function, int moduleId)
+SyringeCore::Hook* PluginImpl::addHook(const u32 address, const void* function, int moduleId)
 {
     SyringeCore::Hook* hook = core->syHook(address, function, this->id, moduleId);
     return hook;
 }
-SyringeCore::Hook* Plugin::addHookEx(const u32 address, const void* function, int options, int moduleId)
+SyringeCore::Hook* PluginImpl::addHookEx(const u32 address, const void* function, int options, int moduleId)
 {
     SyringeCore::Hook* hook = core->syHookEx(address, function, options, this->id, moduleId);
     return hook;
 }
-void Plugin::addEventHandler(Event::EventType type, SyringeCore::EventHandlerFN func)
+void PluginImpl::addEventHandler(Event::EventType type, SyringeCore::EventHandlerFN func)
 {
     core->EventManager.subscribe(type, func, this->id);
 }
-void Plugin::clearEventHandlers()
+void PluginImpl::clearEventHandlers()
 {
     core->EventManager.unsubscribe(this->id);
 }
 
-Plugin::~Plugin()
+PluginImpl::~PluginImpl()
 {
     // Unload the plugin and free resources
     this->unload();

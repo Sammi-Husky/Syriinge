@@ -2,12 +2,13 @@
 #include <OS/OSError.h>
 
 #include <gf/gf_module.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "coreapi.hpp"
 #include "events.hpp"
 #include "hash.hpp"
-#include "plugin.hpp"
+#include "plugin_impl.hpp"
 #include "sy_core.hpp"
 #include "sy_log.hpp"
 
@@ -19,8 +20,8 @@ namespace SyringeCore {
     Hook* HooksTail = NULL;
 
     // Linked list of plugins. Tail is used for insertion to keep it O(1)
-    Plugin* Plugins = NULL;
-    Plugin* PluginsTail = NULL;
+    PluginImpl* Plugins = NULL;
+    PluginImpl* PluginsTail = NULL;
 
     /**
      * Determines if there is a trigger in the plugin metadata that matches the specified kind, action, and key.
@@ -89,7 +90,7 @@ namespace SyringeCore {
         const char* moduleName = event.getModuleName();
         u32 nameHash = syHash(moduleName);
 
-        for (Plugin* plg = Plugins; plg != NULL; plg = plg->getNext())
+        for (PluginImpl* plg = Plugins; plg != NULL; plg = plg->getNext())
         {
             PluginMeta* meta = plg->getMetadata();
 
@@ -123,7 +124,7 @@ namespace SyringeCore {
 
         u32 nameHash = syHash(event.getModuleName());
 
-        for (Plugin* plg = Plugins; plg != NULL; plg = plg->getNext())
+        for (PluginImpl* plg = Plugins; plg != NULL; plg = plg->getNext())
         {
             PluginMeta* meta = plg->getMetadata();
 
@@ -152,7 +153,7 @@ namespace SyringeCore {
         u32 sceneHash = syHash(sceneName);
         bool isMemoryChange = sceneHash == SY_SCMEMORYCHANGE_HASH;
 
-        for (Plugin* plg = Plugins; plg != NULL; plg = plg->getNext())
+        for (PluginImpl* plg = Plugins; plg != NULL; plg = plg->getNext())
         {
             PluginFlags flags = plg->getMetadata()->FLAGS;
             bool isLoaded = plg->getModule() != NULL;
@@ -228,7 +229,7 @@ namespace SyringeCore {
 
         sprintf(tmp, "%s/%s", folder, name);
 
-        Plugin* plg = new (Heaps::Syringe) Plugin(tmp, API, index);
+        PluginImpl* plg = new (Heaps::Syringe) PluginImpl(tmp, API, index);
 
         if (!plg->load())
         {

@@ -43,3 +43,7 @@ public:
     gfSequence* getNextSequence() const;
     s32 getMemoryLayout() const;
 };
+
+namespace SyringeCore {
+    typedef void (*EventHandlerFN)(Event& event);
+}

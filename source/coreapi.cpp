@@ -4,7 +4,6 @@
 
 #include "coreapi.hpp"
 #include "hook.hpp"
-#include "plugin.hpp"
 #include "sy_core.hpp"
 #include "sy_log.hpp"
 

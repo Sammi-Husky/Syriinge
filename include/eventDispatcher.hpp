@@ -12,7 +12,6 @@ namespace SyringeCore {
 }
 
 namespace SyringeCore {
-    typedef void (*EventHandlerFN)(Event& event);
     struct EventHandler {
         EventHandler() : next(NULL), type(Event::INVALID), func(NULL), caller(-1) {}
         EventHandler(Event::EventType t, EventHandlerFN h, s32 c = -1) : next(NULL), type(t), func(h), caller(c) {}
