@@ -21,7 +21,7 @@ When implementing changes, prioritize in this order:
 These are mandatory moving forward:
 1. After every code change, run a full verification build:
    - make clean && make
-2. Commit every change or small set of related changes in logical groups.
+2. Commit every change or small set of related changes in logical groups after confirming whether we are ready to start commiting work.
 3. Use informative commit messages that describe intent and risk.
 4. If a fix addresses a bug or potential bug, state that explicitly in the commit message/body.
 5. After grouped commits, report:
@@ -29,15 +29,9 @@ These are mandatory moving forward:
    - Exact command to reset HEAD back to before those commits without losing the changes (for example, git reset HEAD~n)
 
 ## Current Commit Style
-Use concise titles with direct impact statements, for example:
-- Fix hook removal loop skipping entries for same owner
-- Fix OPT_NO_RETURN being overwritten during hook payload build
-- Harden plugin lifecycle against null and duplicate-load edge cases
-
-Recommended format:
-- Subject: action + component + impact
-- Body line 1: what changed
-- Body line 2: why it matters (bug avoided, memory reduced, behavior stabilized)
+Use the Conventional Commits style. For example:
+ - feat: Add new dependancy array for plugins
+ - docs(guide): Add new guide for function replacement
 
 ## Guardrails
 - Do not revert unrelated changes in the working tree.
