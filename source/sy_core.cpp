@@ -21,6 +21,20 @@ namespace SyringeCore {
     Plugin* Plugins = NULL;
     Plugin* PluginsTail = NULL;
 
+    static PluginTrigger* findTrigger(PluginMeta* metadata, TriggerKind kind,
+                                      TriggerAction action, u32 key)
+    {
+        for (int i = 0; i < MAX_LOAD_TRIGGERS; i++)
+        {
+            PluginTrigger* trigger = &metadata->LOAD_TRIGGERS[i];
+            if (trigger->kind == kind && trigger->action == action && trigger->key == key)
+            {
+                return trigger;
+            }
+        }
+        return NULL;
+    }
+
     void applyInjection(Hook* hook, gfModuleHeader* header)
     {
         if (hook->getModuleId() != header->id)
@@ -75,15 +89,10 @@ namespace SyringeCore {
                 continue; // already loaded
             }
 
-            for (int x = 0; x < MAX_LOAD_TRIGGERS; x++)
+            PluginTrigger* trigger = findTrigger(meta, TRIGGER_MODULE, TRIGGER_LOAD, nameHash);
+            if (trigger != NULL)
             {
-                PluginTrigger& trigger = meta->LOAD_TRIGGERS[x];
-                if (trigger.kind != TRIGGER_MODULE || trigger.action != TRIGGER_LOAD || trigger.key != nameHash)
-                {
-                    continue;
-                }
-
-                if (trigger.heapSrc == HEAP_PIGGYBACK)
+                if (trigger->heapSrc == HEAP_PIGGYBACK)
                 {
                     // Load into the same heap the game used for this module
                     plg->loadIntoHeap(event.getHeap());
@@ -94,7 +103,6 @@ namespace SyringeCore {
                     plg->load();
                 }
                 plg->execute();
-                break;
             }
         }
     }
@@ -115,16 +123,9 @@ namespace SyringeCore {
                 continue; // not loaded
             }
 
-            for (int x = 0; x < MAX_LOAD_TRIGGERS; x++)
+            if (findTrigger(meta, TRIGGER_MODULE, TRIGGER_UNLOAD, nameHash) != NULL)
             {
-                PluginTrigger& trigger = meta->LOAD_TRIGGERS[x];
-                if (trigger.kind != TRIGGER_MODULE || trigger.action != TRIGGER_UNLOAD || trigger.key != nameHash)
-                {
-                    continue;
-                }
-
                 plg->unload();
-                break;
             }
         }
     }
@@ -165,18 +166,10 @@ namespace SyringeCore {
 
             // At this point the plugin is unloaded, so check if a scene trigger
             // matches the current scene.
-            PluginTrigger* triggers = plg->getMetadata()->LOAD_TRIGGERS;
-            for (int x = 0; x < MAX_LOAD_TRIGGERS; x++)
+            if (findTrigger(plg->getMetadata(), TRIGGER_SCENE, TRIGGER_LOAD, sceneHash) != NULL)
             {
-                PluginTrigger& trigger = triggers[x];
-                if (trigger.kind != TRIGGER_SCENE || trigger.action != TRIGGER_LOAD || trigger.key != sceneHash)
-                {
-                    continue;
-                }
-
                 plg->load();
                 plg->execute();
-                break;
             }
         }
     }
