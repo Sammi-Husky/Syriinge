@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gf/gf_scene.h>
+#include <sr/sr_common.h>
 #include <types.h>
 
 // Forward Declarations
@@ -12,6 +13,7 @@ class Event {
 public:
     enum EventType {
         ModuleLoad,
+        ModuleUnload,
         SceneChange,
         INVALID
     };
@@ -24,6 +26,33 @@ public:
     ModuleLoadEvent(gfModuleInfo* info) : m_moduleInfo(info) {}
     virtual EventType getType() const { return Event::ModuleLoad; }
     gfModuleInfo* getModuleInfo() { return m_moduleInfo; }
+
+    /**
+     * @brief Filename of the module being loaded (e.g. "ft_mario.rel").
+     */
+    const char* getModuleName();
+    /**
+     * @brief Heap pointer the game loaded this module into
+     */
+    void* getHeap();
+
+private:
+    gfModuleInfo* m_moduleInfo;
+};
+
+/**
+ * @brief Fired when a game module is unloaded.
+ */
+class ModuleUnloadEvent : public Event {
+public:
+    ModuleUnloadEvent(gfModuleInfo* info) : m_moduleInfo(info) {}
+    virtual EventType getType() const { return Event::ModuleUnload; }
+    gfModuleInfo* getModuleInfo() { return m_moduleInfo; }
+
+    /**
+     * @brief Filename of the module being unloaded (e.g. "ft_mario.rel").
+     */
+    const char* getModuleName();
 
 private:
     gfModuleInfo* m_moduleInfo;

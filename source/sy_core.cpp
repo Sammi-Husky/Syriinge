@@ -7,6 +7,7 @@
 
 #include "coreapi.hpp"
 #include "events.hpp"
+#include "hash.hpp"
 #include "plugin.hpp"
 #include "sy_core.hpp"
 
@@ -54,6 +55,76 @@ namespace SyringeCore {
         {
             applyInjection(Hooks[i], header);
         }
+
+        // Evaluate module load triggers: load any plugin that asked to piggyback
+        // on this module's load.
+        const char* moduleName = moduleEvent.getModuleName();
+        u32 nameHash = syHash(moduleName);
+
+        for (u8 i = 0; i < Plugins.size(); i++)
+        {
+            Plugin* plg = Plugins[i];
+            PluginMeta* meta = plg->getMetadata();
+
+            if (plg->getModule() != NULL)
+                continue; // already loaded
+
+            for (int x = 0; x < MAX_LOAD_TRIGGERS; x++)
+            {
+                PluginTrigger& t = meta->LOAD_TRIGGERS[x];
+
+                // Skip triggers that are not module load triggers
+                if (t.kind != TRIGGER_MODULE || t.action != TRIGGER_LOAD)
+                    continue;
+
+                // Skip triggers that do not match the current module's name hash
+                if (t.key != nameHash)
+                    continue;
+
+                if (t.heapSrc == HEAP_PIGGYBACK)
+                {
+                    // Load into the same heap the game used for this module
+                    plg->loadIntoHeap(moduleEvent.getHeap());
+                }
+                else
+                {
+                    // Load into the plugin's metadata heap
+                    plg->load();
+                }
+                plg->execute();
+                break;
+            }
+        }
+    }
+
+    void onModuleUnloaded(Event& event)
+    {
+        if (event.getType() != Event::ModuleUnload)
+            return;
+
+        ModuleUnloadEvent& moduleEvent = static_cast<ModuleUnloadEvent&>(event);
+        u32 nameHash = syHash(moduleEvent.getModuleName());
+
+        for (u8 i = 0; i < Plugins.size(); i++)
+        {
+            Plugin* plg = Plugins[i];
+            PluginMeta* meta = plg->getMetadata();
+
+            if (plg->getModule() == NULL)
+                continue; // not loaded
+
+            for (int x = 0; x < MAX_LOAD_TRIGGERS; x++)
+            {
+                PluginTrigger& t = meta->LOAD_TRIGGERS[x];
+                if (t.kind != TRIGGER_MODULE || t.action != TRIGGER_UNLOAD)
+                    continue;
+                if (t.key != nameHash)
+                    continue;
+
+                plg->unload();
+                break;
+            }
+        }
     }
 
     void onSceneChange(Event& event)
@@ -65,39 +136,48 @@ namespace SyringeCore {
         gfScene* scene = sceneEvent.getNextScene();
         const char* sceneName = scene->m_sceneName;
 
-        bool isMemoryChange = strcmp(sceneName, "scMemoryChange") == 0;
+        u32 sceneHash = syHash(sceneName);
+        bool isMemoryChange = sceneHash == SY_SCMEMORYCHANGE_HASH;
 
         for (u8 i = 0; i < Plugins.size(); i++)
         {
             Plugin* plg = Plugins[i];
             PluginFlags flags = plg->getMetadata()->FLAGS;
-            const char** loadTimings = plg->getMetadata()->LOAD_TIMINGS;
+            PluginTrigger* triggers = plg->getMetadata()->LOAD_TRIGGERS;
             bool isLoaded = plg->getModule() != NULL;
-
-            if (loadTimings == NULL || loadTimings[0] == NULL)
-                continue;
 
             // Unload any non-persistent plugins during a memory change
             if (isMemoryChange && isLoaded)
             {
-                if (flags.loading & LOAD_PERSIST)
+                // Persistent plugins survive memory changes.
+                if (flags.loading == LOAD_PERSIST)
                     continue;
 
                 plg->unload();
             }
-            // If the plugin is already loaded and this isn't memory change, don't attempt to load it again
+            // If the plugin is already loaded and this isn't a memory change, don't
+            // attempt to load it again
             else if (isLoaded && !isMemoryChange)
             {
                 continue;
             }
 
-            // At this point we've determined the plugin is unloaded so check if it should be loaded for the current scene
+            // At this point the plugin is unloaded, so check if a scene trigger
+            // matches the current scene.
             for (int x = 0; x < MAX_LOAD_TRIGGERS; x++)
             {
-                if (loadTimings[x] == NULL)
+                PluginTrigger& t = triggers[x];
+
+                // Skip triggers that are not scene triggers
+                if (t.kind != TRIGGER_SCENE)
                     continue;
 
-                if (stricmp(loadTimings[x], sceneName) == 0)
+                // Skip triggers that do not match the current scene's hash
+                if (t.key == 0)
+                    continue; // empty slot
+
+                // If the trigger matches the current scene's hash, load and execute the plugin
+                if (t.key == sceneHash)
                 {
                     plg->load();
                     plg->execute();
@@ -113,11 +193,35 @@ namespace SyringeCore {
 
         EventDispatcher::initializeEvents(API);
 
-        // subscribe to onModuleLoaded event to handle applying hooks
+        // subscribe to onModuleLoaded event to handle applying hooks and module load triggers
         API->EventManager.subscribe(Event::ModuleLoad, &onModuleLoaded, -1);
+
+        // subscribe to onModuleUnloaded to handle module unload triggers
+        // NOTE: The game-side unload hook that dispatches ModuleUnloadEvent is not
+        // yet wired (owner RE task). Once it dispatches, this handler is ready.
+        API->EventManager.subscribe(Event::ModuleUnload, &onModuleUnloaded, -1);
 
         // subscribe to onSceneChange event to handle loading plugins
         API->EventManager.subscribe(Event::SceneChange, &onSceneChange, -1);
+    }
+
+    // Returns true if the plugin should be executed immediately at boot: either no
+    // triggers were declared (first slot empty) or a scene trigger explicitly
+    // requests "BOOT".
+    static bool isBootPlugin(PluginMeta* meta)
+    {
+        // No triggers declared at all -> boot default (matches old behavior where
+        // a NULL/empty timings array executed immediately).
+        if (meta->LOAD_TRIGGERS[0].key == 0 && meta->LOAD_TRIGGERS[0].kind == TRIGGER_SCENE)
+            return true;
+
+        for (int i = 0; i < MAX_LOAD_TRIGGERS; i++)
+        {
+            PluginTrigger& t = meta->LOAD_TRIGGERS[i];
+            if (t.kind == TRIGGER_SCENE && t.key == SY_BOOT_HASH)
+                return true;
+        }
+        return false;
     }
 
     bool faLoadPlugin(FAEntryInfo* info, const char* folder, s32 index)
@@ -144,8 +248,8 @@ namespace SyringeCore {
 
         PluginMeta* meta = plg->getMetadata();
 
-        // if LOAD_TIMINGS is NULL or the first timing is "BOOT", execute the plugin immediately
-        if (meta->LOAD_TIMINGS == NULL || meta->LOAD_TIMINGS[0] == NULL || stricmp(meta->LOAD_TIMINGS[0], "BOOT") == 0)
+        // If no triggers are declared or "BOOT" is requested, execute immediately.
+        if (isBootPlugin(meta))
         {
             plg->execute();
             return true;

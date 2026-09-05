@@ -3,6 +3,7 @@
 #include "eventDispatcher.hpp"
 #include "events.hpp"
 #include "version.hpp"
+#include <sr/sr_common.h>
 
 class gfModule;
 namespace SyringeCore {
@@ -18,8 +19,22 @@ public:
 
     /**
      * @brief Loads the plugin and returns a pointer to the module.
+     *
+     * @param overrideHeap Optional heap to allocate the plugin module into. When
+     * left as Heaps::Invalid the metadata heap (PluginFlags.heap) is used. Module
+     * piggyback loads should instead call loadIntoHeap() with the triggering
+     * module's heap pointer so the plugin shares that module's heap/lifetime.
      */
-    virtual bool load();
+    virtual bool load(HeapType overrideHeap = Heaps::Invalid);
+    /**
+     * @brief Loads the plugin into a specific, already-resolved heap.
+     *
+     * Used for module "piggyback" loads where the target heap is the heap the
+     * game loaded the triggering module into (a raw heap pointer, not an ID).
+     *
+     * @param heap Resolved heap pointer to allocate the plugin module into.
+     */
+    virtual bool loadIntoHeap(void* heap);
     /**
      * @brief Unloads the plugin and restores original instructions for all hooks.
      */
@@ -110,6 +125,48 @@ typedef union {
 
 const int MAX_LOAD_TRIGGERS = 10;
 
+/**
+ * @brief Whether a trigger reacts to a scene change or a game module load/unload.
+ */
+enum TriggerKind {
+    TRIGGER_SCENE = 0, // Keyed by scene name (gfScene::m_sceneName)
+    TRIGGER_MODULE = 1 // Keyed by module filename (e.g. "ft_mario.rel")
+};
+
+/**
+ * @brief What a trigger does when it fires.
+ * @note TRIGGER_UNLOAD is only meaningful for TRIGGER_MODULE. Scenes are load-only;
+ * scene-driven unloading is governed by the persistence model (PluginFlags.loading)
+ * and the scMemoryChange pass.
+ */
+enum TriggerAction {
+    TRIGGER_LOAD = 0,
+    TRIGGER_UNLOAD = 1
+};
+
+/**
+ * @brief Heap source for a module load trigger.
+ */
+enum TriggerHeap {
+    HEAP_METADATA = 0, // Use the plugin metadata heap (PluginFlags.heap)
+    HEAP_PIGGYBACK = 1 // Use the triggering module's own heap
+};
+
+/**
+ * @brief A single load/unload trigger descriptor.
+ *
+ * Compact, allocation-free replacement for the old string array. The key is a
+ * case-insensitive FNV-1a hash of either a scene name or a module filename
+ * (see hash.hpp). 8 bytes each.
+ */
+struct PluginTrigger {
+    u32 key;    // FNV-1a hash of the scene name / module filename
+    u8 kind;    // TriggerKind
+    u8 action;  // TriggerAction
+    u8 heapSrc; // TriggerHeap (module loads only)
+    u8 _pad;    // alignment / reserved
+};
+
 struct PluginMeta {
     char NAME[20];
     char AUTHOR[20];
@@ -117,5 +174,5 @@ struct PluginMeta {
     Version SY_VERSION;
     void (*entrypoint)(Plugin* plg);
     PluginFlags FLAGS;
-    const char* LOAD_TIMINGS[MAX_LOAD_TRIGGERS];
+    PluginTrigger LOAD_TRIGGERS[MAX_LOAD_TRIGGERS];
 };

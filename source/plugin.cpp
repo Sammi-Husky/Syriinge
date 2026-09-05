@@ -21,7 +21,28 @@ Plugin::Plugin(const char* path, SyringeCore::CoreApi* core, s32 id)
     this->path[sizeof(this->path) - 1] = '\0';
 }
 
-bool Plugin::load()
+bool Plugin::load(HeapType overrideHeap)
+{
+    // Default to the Syringe heap
+    u32 heapId = Heaps::Syringe;
+
+    // If the metadata is present (e.g. this is a reload)
+    // then use the heapId from the metadata
+    if (this->metadata)
+    {
+        heapId = this->metadata->FLAGS.heap;
+    }
+
+    // An explicit override takes precedence.
+    if (overrideHeap != Heaps::Invalid)
+    {
+        heapId = overrideHeap;
+    }
+
+    return this->loadIntoHeap(gfHeapManager::getHeap(static_cast<HeapType>(heapId)));
+}
+
+bool Plugin::loadIntoHeap(void* heap)
 {
     if (this->module != NULL)
     {
@@ -33,16 +54,6 @@ bool Plugin::load()
     gfFileIOHandle handle;
     handle.read(this->path, Heaps::MenuInstance, 0);
 
-    // Default to the Syringe heap
-    u32 heapId = Heaps::Syringe;
-
-    // If the metadata is present (e.g. this is a reload)
-    // then use the heapId from the metadata
-    if (this->metadata)
-    {
-        heapId = this->metadata->FLAGS.heap;
-    }
-
     void* buffer = handle.getBuffer();
 
     if (!buffer)
@@ -51,9 +62,9 @@ bool Plugin::load()
         return false;
     }
 
-    // Create the gfModule
+    // Create the gfModule in the requested heap
     this->module = gfModule::create(
-        gfHeapManager::getHeap(static_cast<HeapType>(heapId)),
+        heap,
         buffer,
         handle.getSize());
 
@@ -76,17 +87,9 @@ bool Plugin::load()
     this->metadata->entrypoint = metadata->entrypoint;
     for (int i = 0; i < MAX_LOAD_TRIGGERS; i++)
     {
-        if (metadata->LOAD_TIMINGS[i] != NULL)
-        {
-            int length = strlen(metadata->LOAD_TIMINGS[i]) + 1;
-            char* timing = new char[length];
-            strncpy(timing, metadata->LOAD_TIMINGS[i], length);
-            this->metadata->LOAD_TIMINGS[i] = timing;
-        }
-        else
-        {
-            this->metadata->LOAD_TIMINGS[i] = NULL;
-        }
+        // Triggers are plain value types (hashes + flags), so a flat copy is
+        // sufficient.
+        this->metadata->LOAD_TRIGGERS[i] = metadata->LOAD_TRIGGERS[i];
     }
 
     // Check Syringe version compatibility
@@ -163,10 +166,6 @@ Plugin::~Plugin()
     this->unload();
 
     // Free metadata
-    for (int i = 0; i < MAX_LOAD_TRIGGERS; i++)
-    {
-        delete[] this->metadata->LOAD_TIMINGS[i];
-    }
     delete this->metadata;
 
     // Set metadata to NULL
