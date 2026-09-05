@@ -20,6 +20,10 @@ namespace SyringeCore {
         api->syHookEx(0x80026db4, EventDispatcher::_moduleLoadedHook, OPT_SAVE_REGS | OPT_ORIG_PRE);
         api->syHookEx(0x800272e0, EventDispatcher::_moduleLoadedHook, OPT_SAVE_REGS | OPT_ORIG_PRE);
 
+        // Module unload events
+        api->syHookEx(0x800273d8, EventDispatcher::_moduleUnloadedHook, OPT_SAVE_REGS | OPT_ORIG_PRE);
+        api->syHookEx(0x8002750c, EventDispatcher::_moduleUnloadedHook, OPT_SAVE_REGS | OPT_ORIG_PRE);
+
         // scene change event
         Hook* hook = api->syHookEx(0x8002d5ac, EventDispatcher::_setNextScene, OPT_DIRECT);
         hook->getTrampoline(reinterpret_cast<void**>(&_setNextSceneOrig));
@@ -65,6 +69,18 @@ namespace SyringeCore {
         }
 
         ModuleLoadEvent event = ModuleLoadEvent(info);
+        EventDispatcher::dispatchEvent(event);
+    }
+
+    void EventDispatcher::_moduleUnloadedHook()
+    {
+        register gfModuleInfo* info;
+
+        asm {
+                mr info, r30
+        }
+
+        ModuleUnloadEvent event = ModuleUnloadEvent(info);
         EventDispatcher::dispatchEvent(event);
     }
 

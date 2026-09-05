@@ -58,6 +58,10 @@ namespace SyringeCore {
          */
         static void _moduleLoadedHook();
         /**
+         * Hook for module unloaded events.
+         */
+        static void _moduleUnloadedHook();
+        /**
          * Hook for managing scene related events
          */
         static void _setNextScene(gfSceneManager* manager, char* name, int memLayout);
