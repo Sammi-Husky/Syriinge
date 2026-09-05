@@ -4,11 +4,11 @@
 #include <gf/gf_module.h>
 #include <string.h>
 
-#include "coreapi.hpp"
-#include "hook.hpp"
-#include "plugin_impl.hpp"
-#include "sy_core.hpp"
-#include "sy_log.hpp"
+#include "private/coreapi.hpp"
+#include "private/hook.hpp"
+#include "private/plugin_impl.hpp"
+#include "private/sy_core.hpp"
+#include "private/sy_log.hpp"
 
 typedef PluginMeta* (*PluginPrologFN)();
 PluginImpl::PluginImpl(const char* path, SyringeCore::CoreApi* core, s32 id)

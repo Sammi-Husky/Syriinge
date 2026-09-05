@@ -21,4 +21,4 @@ namespace SyringeUtils {
     {
         return EncodeBranch(start, dest, false);
     }
-} // namespace SyringeUtils
+}

@@ -2,15 +2,16 @@
 #include <OS/OSError.h>
 
 #include <gf/gf_module.h>
+#include <gf/gf_scene.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "coreapi.hpp"
-#include "events.hpp"
-#include "hash.hpp"
-#include "plugin_impl.hpp"
-#include "sy_core.hpp"
-#include "sy_log.hpp"
+#include "private/coreapi.hpp"
+#include "private/plugin_impl.hpp"
+#include "private/sy_core.hpp"
+#include "private/sy_log.hpp"
+#include "public/events.hpp"
+#include "public/hash.hpp"
 
 namespace SyringeCore {
     CoreApi* API = NULL;

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "public/hook_types.hpp"
 #include <types.h>
 
 namespace SyringeCore {
@@ -8,33 +9,24 @@ namespace SyringeCore {
         HOOK_RELATIVE
     };
 
-    enum HookOptions {
-        OPT_NONE = 0x0,      // no options
-        OPT_SAVE_REGS = 0x1, // use safe hook
-        OPT_ORIG_PRE = 0x2,  // run the original instruction before hook
-        OPT_ORIG_POST = 0x4, // run the original instruction after the hook
-        OPT_NO_RETURN = 0x8, // do not return to hooked function
-        OPT_DIRECT = 0x10    // use direct branch instead of wrapping in a trampoline
-    };
-
     struct Trampoline {
         Trampoline(u32 originalInstr, u32 retAddr);
-        u32 originalInstr; // original instruction
-        u32 branch;        // branch to original func code + 4
+        u32 originalInstr;
+        u32 branch;
     };
 
     class Hook {
     private:
         Hook* next;
-        s32 owner;             // ID of the plugin that owns this hook (-1 for core)
-        HookOptions options;   // hook options
-        u32 moduleId;          // module ID this hook belongs to
-        u32 tgtAddr;           // target address to hook (this can be relative)
-        u32 newAddr;           // address to branch to
-        u32 instructions[14];  // hook instructions
-        Trampoline trampoline; // trampoline to facilitate calling original function
-        u32 installedAt;       // address where the hook was actually installed
-        u32 originalInstr;     // original instruction at target address
+        s32 owner;
+        HookOptions options;
+        u32 moduleId;
+        u32 tgtAddr;
+        u32 newAddr;
+        u32 instructions[14];
+        Trampoline trampoline;
+        u32 installedAt;
+        u32 originalInstr;
     public:
         Hook(u32 source, u32 dest, u32 moduleId, int options, s32 owner);
         HookType getType() const { return moduleId == -1 ? HOOK_STATIC : HOOK_RELATIVE; }
@@ -49,7 +41,6 @@ namespace SyringeCore {
         s32 getOwner() const { return owner; }
         Hook* getNext() const { return next; }
         void setNext(Hook* hook) { next = hook; }
-
         void apply(u32 address);
         void undo();
 

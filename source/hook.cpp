@@ -1,7 +1,7 @@
 #include <OS/OSCache.h>
 
-#include "hook.hpp"
-#include "sy_utils.hpp"
+#include "private/hook.hpp"
+#include "private/sy_utils.hpp"
 #include <internal/mem.h>
 namespace SyringeCore {
     // Payload template for hooks that need to save registers

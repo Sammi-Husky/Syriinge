@@ -1,8 +1,8 @@
 #include <OS/OSError.h>
 #include <SO/SOBasic.h>
 
-#include "sy_core.hpp"
-#include "sy_log.hpp"
+#include "private/sy_core.hpp"
+#include "private/sy_log.hpp"
 
 extern "C" {
 typedef void (*PFN_voidfunc)();

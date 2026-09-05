@@ -1,10 +1,7 @@
 #pragma once
 
-#include "events.hpp"
-
-namespace SyringeCore {
-    class Hook;
-}
+#include "public/events.hpp"
+#include "public/hook_types.hpp"
 
 class Plugin {
 public:

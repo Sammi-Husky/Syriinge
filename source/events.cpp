@@ -1,5 +1,6 @@
-#include "events.hpp"
+#include "public/events.hpp"
 #include <gf/gf_module.h>
+#include <gf/gf_scene.h>
 
 gfScene* Event::getPrevScene() const { return payload.sceneManager->m_prevScene; }
 gfScene* Event::getCurrentScene() const { return payload.sceneManager->m_currentScene; }

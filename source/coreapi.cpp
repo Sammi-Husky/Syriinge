@@ -2,10 +2,10 @@
 #include <gf/gf_heap_manager.h>
 #include <gf/gf_module.h>
 
-#include "coreapi.hpp"
-#include "hook.hpp"
-#include "sy_core.hpp"
-#include "sy_log.hpp"
+#include "private/coreapi.hpp"
+#include "private/hook.hpp"
+#include "private/sy_core.hpp"
+#include "private/sy_log.hpp"
 
 namespace SyringeCore {
     // Linked list of hooks. Tail is used so insertion is O(1) by not having to walk the full list to insert

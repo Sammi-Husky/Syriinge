@@ -1,14 +1,13 @@
 #pragma once
 
-#include "plugin.hpp"
-#include "plugin_meta.hpp"
+#include "public/plugin.hpp"
+#include "public/plugin_meta.hpp"
 #include <sr/sr_common.h>
 
 class gfModule;
 
 namespace SyringeCore {
     class CoreApi;
-    class Hook;
 }
 
 class PluginImpl : public Plugin {
