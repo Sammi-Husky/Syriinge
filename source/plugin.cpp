@@ -82,18 +82,7 @@ bool Plugin::loadIntoHeap(void* heap)
 
     // copy metadata to plugin instance
     this->metadata = new (Heaps::Syringe) PluginMeta;
-    strncpy(this->metadata->NAME, metadata->NAME, sizeof(this->metadata->NAME));
-    strncpy(this->metadata->AUTHOR, metadata->AUTHOR, sizeof(this->metadata->AUTHOR));
-    this->metadata->FLAGS = metadata->FLAGS;
-    this->metadata->VERSION = metadata->VERSION;
-    this->metadata->SY_VERSION = metadata->SY_VERSION;
-    this->metadata->entrypoint = metadata->entrypoint;
-    for (int i = 0; i < MAX_LOAD_TRIGGERS; i++)
-    {
-        // Triggers are plain value types (hashes + flags), so a flat copy is
-        // sufficient.
-        this->metadata->LOAD_TRIGGERS[i] = metadata->LOAD_TRIGGERS[i];
-    }
+    *this->metadata = *metadata;
 
     // Check Syringe version compatibility
     this->metadata->VERSION.toString(this->metadata->VERSION, buff);
