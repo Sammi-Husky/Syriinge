@@ -82,9 +82,9 @@ bool Plugin::loadIntoHeap(void* heap)
     // Delete the old metadata before copying the new one to prevent memory leak
     delete this->metadata;
 
-    // copy metadata to plugin instance
+    // PluginMeta is a POD structure so a flat memcpy is sufficient to copy its contents.
     this->metadata = new (Heaps::Syringe) PluginMeta;
-    *this->metadata = *metadata;
+    memcpy(this->metadata, metadata, sizeof(PluginMeta));
 
     // Check Syringe version compatibility
     this->metadata->VERSION.toString(this->metadata->VERSION, buff);
