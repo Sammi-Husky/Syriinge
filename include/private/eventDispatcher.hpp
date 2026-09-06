@@ -1,6 +1,6 @@
 #pragma once
 
-#include "public/events.hpp"
+#include "events.hpp"
 
 class gfSceneManager;
 class gfModuleInfo;

@@ -1,10 +1,10 @@
 #include <gf/gf_module.h>
 #include <gf/gf_scene.h>
 
+#include "events.hpp"
 #include "private/coreapi.hpp"
 #include "private/eventDispatcher.hpp"
 #include "private/hook.hpp"
-#include "public/events.hpp"
 
 namespace SyringeCore {
     void (*_setNextSceneOrig)(gfSceneManager* manager, char* name, int memLayout);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "public/hook_types.hpp"
+#include "hook_types.hpp"
 #include <types.h>
 
 namespace SyringeCore {
@@ -27,6 +27,7 @@ namespace SyringeCore {
         Trampoline trampoline;
         u32 installedAt;
         u32 originalInstr;
+
     public:
         Hook(u32 source, u32 dest, u32 moduleId, int options, s32 owner);
         HookType getType() const { return moduleId == -1 ? HOOK_STATIC : HOOK_RELATIVE; }

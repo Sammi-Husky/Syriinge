@@ -1,6 +1,6 @@
 #pragma once
 
-#include "public/plugin_meta.hpp"
+#include "plugin_meta.hpp"
 
 #define SY_FNV_OFFSET_BASIS 0x811c9dc5u
 #define SY_FNV_PRIME        0x01000193u

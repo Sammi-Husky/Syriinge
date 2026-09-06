@@ -1,6 +1,6 @@
 #pragma once
 
-#include "public/version.hpp"
+#include "version.hpp"
 
 class Plugin;
 

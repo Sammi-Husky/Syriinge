@@ -1,7 +1,7 @@
 #pragma once
 
 #include "private/hook.hpp"
-#include "public/version.hpp"
+#include "version.hpp"
 #include <gf/gf_module.h>
 
 extern "C" char MOD_PATCH_DIR[0x18];

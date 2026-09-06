@@ -1,4 +1,4 @@
-#include "public/events.hpp"
+#include "events.hpp"
 #include <gf/gf_module.h>
 #include <gf/gf_scene.h>
 

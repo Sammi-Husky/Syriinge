@@ -6,12 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "events.hpp"
+#include "hash.hpp"
 #include "private/coreapi.hpp"
 #include "private/plugin_impl.hpp"
 #include "private/sy_core.hpp"
 #include "private/sy_log.hpp"
-#include "public/events.hpp"
-#include "public/hash.hpp"
 
 namespace SyringeCore {
     CoreApi* API = NULL;

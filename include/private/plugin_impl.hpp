@@ -1,7 +1,7 @@
 #pragma once
 
-#include "public/plugin.hpp"
-#include "public/plugin_meta.hpp"
+#include "plugin.hpp"
+#include "plugin_meta.hpp"
 #include <sr/sr_common.h>
 
 class gfModule;

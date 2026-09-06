@@ -1,7 +1,7 @@
 #pragma once
 
-#include "public/events.hpp"
-#include "public/hook_types.hpp"
+#include "events.hpp"
+#include "hook_types.hpp"
 
 class Plugin {
 public:
